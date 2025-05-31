@@ -1,0 +1,1 @@
+com.churchsystem.util.HibernateUtil
