@@ -16,16 +16,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import model.Member;
 
-/**
- *
- * @author HP
- */
+
 public class MemberImpl extends UnicastRemoteObject implements MemberService {
 
     private MemberDao memberDao;
 
     public MemberImpl() throws RemoteException{
          super();
+         this.memberDao = new MemberDao(); // Initialize memberDao
     }
 
     @Override
@@ -38,7 +36,10 @@ public class MemberImpl extends UnicastRemoteObject implements MemberService {
         return memberDao.updateMember(members);
     }
 
-   
+    @Override
+    public String deleteMember(Member members) throws RemoteException {
+        return memberDao.deleteMember(members);
+    }
 
     @Override
     public List<Member> retreiveAll() throws RemoteException {
@@ -52,13 +53,21 @@ public class MemberImpl extends UnicastRemoteObject implements MemberService {
 
     @Override
     public Member getMemberById(int userId) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (this.memberDao == null) {
+            System.err.println("MemberImpl.getMemberById: memberDao is null!");
+            throw new RemoteException("Member service is not properly initialized.");
+        }
+        // Assuming MemberDao.retrieveById was correctly refactored to take an int ID.
+        return this.memberDao.retrieveById(userId);
     }
 
+    // Assuming searchMembersByName will be added to MemberService interface
     @Override
-    public String deleteMember(int memberID) throws RemoteException {
-       return memberDao.deleteMember(memberID);
+    public List<Member> searchMembersByName(String name) throws RemoteException {
+        if (this.memberDao == null) {
+            System.err.println("MemberImpl.searchMembersByName: memberDao is null!");
+            throw new RemoteException("Member service is not properly initialized.");
+        }
+        return this.memberDao.searchMembersByName(name);
     }
-    
-    
 }

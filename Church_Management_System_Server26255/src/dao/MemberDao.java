@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.ArrayList; // Added for searchMembersByName
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.Query; // Added for searchMembersByName
+import org.hibernate.query.Query; // Added for searchMembersByName
+import util.HibernateUtil; // Corrected import assuming HibernateUtil is in util
 
 public class MemberDao{
    
     public String registerMember(Member member) {
         Transaction transaction = null;
-        try  {
-            Session session = HibernateUtil.getSessionFactory().openSession();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.save(member);
             transaction.commit();
@@ -29,8 +29,7 @@ public class MemberDao{
 
     public String updateMember(Member member) {
         Transaction transaction = null;
-        try  {
-            Session session = HibernateUtil.getSessionFactory().openSession();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.update(member); // Corrected to session.update()
             transaction.commit();
@@ -46,10 +45,9 @@ public class MemberDao{
 
     public String deleteMember(int memberId) { // Changed parameter to int
         Transaction transaction = null;
-        try {
-            Session session = HibernateUtil.getSessionFactory().openSession();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-            Member memberToDelete = (Member) session.get(Member.class, memberId);
+            Member memberToDelete = session.get(Member.class, memberId);
             if (memberToDelete != null) {
                 session.delete(memberToDelete); // Corrected to session.delete()
                 transaction.commit();
@@ -70,40 +68,34 @@ public class MemberDao{
     }
      
     public List<Member> retreiveAll() {
-        try  {
-            Session session = HibernateUtil.getSessionFactory().openSession();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             // Corrected HQL query and using try-with-resources
-            Query query = session.createQuery("FROM Member mem");
-List<Member> members = query.list(); // Unsafe cast but required in Hibernate 4
-return members;
+            Query<Member> query = session.createQuery("FROM Member mem", Member.class);
+            return query.list();
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>(); // Return empty list on error
         }
     }
 
-    public Member retrieveById(Member members) { // Changed parameter to int
-        Session ss= HibernateUtil.getSessionFactory().openSession();
-        Member member=(Member)ss.get(Member.class,members.getMemberId());
-        ss.close();
-        return member;
+    public Member retrieveById(int memberId) { // Changed parameter to int
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(Member.class, memberId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Return null on error or if not found
+        }
     }
 
     public List<Member> searchMembersByName(String name) {
-        try  {
-            Session session = HibernateUtil.getSessionFactory().openSession();
-            Query query = session.createQuery(
-    "FROM Member m WHERE lower(m.fullName) LIKE lower(:name)");
-query.setParameter("name", "%" + name + "%");
-
-@SuppressWarnings("unchecked")
-List<Member> members = (List<Member>) query.list();
-
-return members;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Member> query = session.createQuery(
+                "FROM Member m WHERE lower(m.fullName) LIKE lower(:name)", Member.class);
+            query.setParameter("name", "%" + name + "%"); // Wildcards for contains search
+            return query.list();
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>(); // Return empty list on error
         }
     }
-    
 }

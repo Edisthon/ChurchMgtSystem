@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import model.Event; // Client-side model
 import service.EventService; // Client-side RMI interface
 import java.util.List;
+import java.util.Collections; // Added import
 import java.util.Date; // For current time comparison
 import java.util.stream.Collectors;
 import java.sql.Timestamp;
@@ -155,7 +156,7 @@ public class UserEventsPanel extends JPanel {
                 try {
                     List<Event> allEvents = eventService.retreiveAll();
                     if (allEvents == null) {
-                        return List.of();
+                        return java.util.Collections.emptyList();
                     }
                     Date currentTime = new Date();
                     return allEvents.stream()
@@ -164,7 +165,7 @@ public class UserEventsPanel extends JPanel {
                 } catch (RemoteException e) {
                     e.printStackTrace();
                     errorMessage = "Error communicating with the server: " + e.getMessage();
-                    return List.of();
+                    return java.util.Collections.emptyList();
                 }
             }
 
