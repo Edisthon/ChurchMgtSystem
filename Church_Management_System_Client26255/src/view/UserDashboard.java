@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import util.UserSession;
+import view.UserEventsPanel; // Added for UserEventsPanel integration
 // view.LoginForm is in the same package, so direct import is not strictly necessary
 // import view.LoginForm;
 
@@ -14,6 +15,7 @@ public class UserDashboard extends JFrame {
     private JPanel navigationPanel;
     private JPanel contentPanel;
     private CardLayout cardLayout;
+    private UserEventsPanel userEventsPanel; // Declare UserEventsPanel instance
 
     private JButton btnUpcomingEvents;
     private JButton btnMarkAttendance;
@@ -80,13 +82,16 @@ public class UserDashboard extends JFrame {
         welcomePanel.add(welcomeLabel);
         contentPanel.add(welcomePanel, "WelcomePanel");
 
+        // Instantiate and add UserEventsPanel
+        userEventsPanel = new UserEventsPanel();
+        contentPanel.add(userEventsPanel, "UserEventsPanel"); // Key for CardLayout
+
         mainPanel.add(contentPanel, BorderLayout.CENTER);
         cardLayout.show(contentPanel, "WelcomePanel");
 
         // Add Action Listeners
         btnUpcomingEvents.addActionListener(e ->
-            JOptionPane.showMessageDialog(UserDashboard.this, "Upcoming Events clicked!")
-            // cardLayout.show(contentPanel, "UpcomingEventsPanel");
+            cardLayout.show(contentPanel, "UserEventsPanel")
         );
 
         btnMarkAttendance.addActionListener(e ->

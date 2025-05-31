@@ -375,7 +375,14 @@ public class LoginForm extends javax.swing.JFrame {
                     role = "user";
                 }
 
-                UserSession.getInstance().setUser(user, role);
+                // Set dummy accountId based on role
+                int accountIdToSet = 0; // Default for admin or if other logic fails
+                if (role.equals("admin")) {
+                    accountIdToSet = 0; // Or -1, or a specific admin user ID if applicable
+                } else {
+                    accountIdToSet = 1; // Dummy member ID for regular user
+                }
+                UserSession.getInstance().setUser(user, role, accountIdToSet);
 
                 if (role.equals("admin")) {
                     new AdminDashboard().setVisible(true);

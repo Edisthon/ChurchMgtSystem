@@ -6,6 +6,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import util.UserSession;
 import view.EventsPanel; // Added for EventsPanel integration
+import view.MembersPanel; // Added for MembersPanel integration
+import view.AttendancePanel; // Added for AttendancePanel integration
+import view.DonationsPanel; // Added for DonationsPanel integration
 // No need to import view.LoginForm explicitly if it's in the same package 'view'
 // import view.LoginForm;
 
@@ -16,6 +19,9 @@ public class AdminDashboard extends JFrame {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private EventsPanel eventsPanel; // Declare EventsPanel instance
+    private MembersPanel membersPanel; // Declare MembersPanel instance
+    private AttendancePanel attendancePanel; // Declare AttendancePanel instance
+    private DonationsPanel donationsPanel; // Declare DonationsPanel instance
 
     private JButton btnManageEvents;
     private JButton btnViewMembers;
@@ -81,6 +87,18 @@ public class AdminDashboard extends JFrame {
         eventsPanel = new EventsPanel();
         contentPanel.add(eventsPanel, "EventsPanel"); // Key for CardLayout
 
+        // Instantiate and add MembersPanel
+        membersPanel = new MembersPanel();
+        contentPanel.add(membersPanel, "MembersPanel"); // Key for CardLayout
+
+        // Instantiate and add AttendancePanel
+        attendancePanel = new AttendancePanel();
+        contentPanel.add(attendancePanel, "AttendancePanel"); // Key for CardLayout
+
+        // Instantiate and add DonationsPanel
+        donationsPanel = new DonationsPanel();
+        contentPanel.add(donationsPanel, "DonationsPanel"); // Key for CardLayout
+
         mainPanel.add(contentPanel, BorderLayout.CENTER);
         cardLayout.show(contentPanel, "WelcomePanel"); // Show welcome panel initially
 
@@ -95,24 +113,21 @@ public class AdminDashboard extends JFrame {
         btnViewMembers.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(AdminDashboard.this, "View Members clicked!");
-                // cardLayout.show(contentPanel, "MembersPanel");
+                cardLayout.show(contentPanel, "MembersPanel");
             }
         });
 
         btnViewAttendance.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(AdminDashboard.this, "View Attendance clicked!");
-                // cardLayout.show(contentPanel, "AttendancePanel");
+                cardLayout.show(contentPanel, "AttendancePanel");
             }
         });
 
         btnDonationReports.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(AdminDashboard.this, "Donation Reports clicked!");
-                // cardLayout.show(contentPanel, "ReportsPanel");
+                cardLayout.show(contentPanel, "DonationsPanel");
             }
         });
 
