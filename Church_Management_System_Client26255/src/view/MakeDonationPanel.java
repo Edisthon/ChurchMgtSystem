@@ -14,6 +14,7 @@ import util.UserSession;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Collections; // Added import
 import java.util.Vector; // For JComboBox model, though not strictly necessary with EventWrapper
 import java.util.stream.Collectors;
 import java.util.Date; // For filtering upcoming events
@@ -169,7 +170,7 @@ public class MakeDonationPanel extends JPanel {
                             .filter(event -> event.getEventDateTime() != null && event.getEventDateTime().after(currentTime))
                             .collect(Collectors.toList());
                     } else {
-                        fetchedEvents = List.of(); // Empty list
+                        fetchedEvents = java.util.Collections.emptyList(); // Empty list
                     }
                     return true; // Success
                 } catch (RemoteException e) {

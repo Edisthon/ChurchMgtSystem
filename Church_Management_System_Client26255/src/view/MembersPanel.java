@@ -15,12 +15,21 @@ import com.toedter.calendar.JDateChooser; // Assuming this library is available
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.RemoteException;
+import java.io.File;
+import java.io.IOException;
+import javax.swing.JFileChooser;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+
 
 public class MembersPanel extends JPanel {
 
     private JTable membersTable;
     private DefaultTableModel tableModel;
-    private JButton btnAddMember, btnEditMember, btnDeleteMember, btnRefreshMembers;
+    private JButton btnAddMember, btnEditMember, btnDeleteMember, btnRefreshMembers, btnExportMembersPdf; // Added export button
     private MemberService memberService;
 
     // Search components
@@ -51,19 +60,22 @@ public class MembersPanel extends JPanel {
                         "CRUD operations will be disabled.",
                         "Service Connection Error", JOptionPane.ERROR_MESSAGE);
             });
-            disableCrudButtons();
+            updateComponentStates(false); // Use updated method
         }
         loadMembers();
     }
 
-    private void disableCrudButtons() {
-        btnAddMember.setEnabled(false);
-        btnEditMember.setEnabled(false);
-        btnDeleteMember.setEnabled(false);
-        // btnRefreshMembers can also be considered part of CRUD enablement
-        if(btnRefreshMembers != null) btnRefreshMembers.setEnabled(false);
-        if(btnSearchMember != null) btnSearchMember.setEnabled(false);
-        if(btnShowAllMembers != null) btnShowAllMembers.setEnabled(false);
+    // Renamed and updated to manage all relevant component states
+    private void updateComponentStates(boolean enable) {
+        btnAddMember.setEnabled(enable);
+        btnEditMember.setEnabled(enable);
+        btnDeleteMember.setEnabled(enable);
+        if(btnRefreshMembers != null) btnRefreshMembers.setEnabled(enable);
+        if(btnSearchMember != null) btnSearchMember.setEnabled(enable);
+        if(btnShowAllMembers != null) btnShowAllMembers.setEnabled(enable);
+        // Export button state depends on table content as well, handled after data load
+        // Initially set based on 'enable' flag, but will be fine-tuned after data loads.
+        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(enable && tableModel != null && tableModel.getRowCount() > 0);
     }
 
     private void initComponents() {
@@ -96,12 +108,14 @@ public class MembersPanel extends JPanel {
         btnAddMember = new JButton("Add Member");
         btnEditMember = new JButton("Edit Member");
         btnDeleteMember = new JButton("Delete Member");
-        btnRefreshMembers = new JButton("Refresh");
+        btnRefreshMembers = new JButton("Refresh"); // This button is now less prominent, btnShowAllMembers is clearer
+        btnExportMembersPdf = new JButton("Export to PDF");
 
         buttonPanel.add(btnAddMember);
         buttonPanel.add(btnEditMember);
         buttonPanel.add(btnDeleteMember);
-        buttonPanel.add(btnRefreshMembers);
+        buttonPanel.add(btnRefreshMembers); // Keeping this for now, acts like show all
+        buttonPanel.add(btnExportMembersPdf);
         add(buttonPanel, BorderLayout.SOUTH);
 
         // Add Action Listeners
@@ -119,9 +133,10 @@ public class MembersPanel extends JPanel {
             if (!btnDeleteMember.isEnabled()) return;
             deleteSelectedMember();
         });
-        btnRefreshMembers.addActionListener(e -> loadMembers()); // Refresh still loads all
+        btnRefreshMembers.addActionListener(e -> loadMembers());
         btnSearchMember.addActionListener(e -> searchMembersAction());
-        btnShowAllMembers.addActionListener(e -> loadMembers()); // Show All also loads all
+        btnShowAllMembers.addActionListener(e -> loadMembers());
+        btnExportMembersPdf.addActionListener(e -> exportMembersToPdf());
     }
 
     private void populateTableWithMembers(List<Member> members) {
@@ -143,14 +158,18 @@ public class MembersPanel extends JPanel {
     private void loadMembers() {
         if (memberService == null) {
             tableModel.setRowCount(0);
-            disableCrudButtons(); // Ensure all relevant buttons are disabled
+            // disableCrudButtons(); // This was the old name, updateComponentStates is now used.
+            updateComponentStates(false);
             // Initial error message shown in constructor
             return;
         }
 
-        btnRefreshMembers.setEnabled(false); // Disable during load
-        btnSearchMember.setEnabled(false);
-        btnShowAllMembers.setEnabled(false);
+        // updateComponentStates(false); // Call this instead of individual setEnabled(false)
+        // btnRefreshMembers.setEnabled(false);
+        // btnSearchMember.setEnabled(false);
+        // btnShowAllMembers.setEnabled(false);
+        updateComponentStates(false); // This will also handle btnExportMembersPdf initially
+        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(false); // Explicitly ensure export is off during load
 
         SwingWorker<List<Member>, Void> worker = new SwingWorker<List<Member>, Void>() {
             private String errorMessage = null;
@@ -167,19 +186,26 @@ public class MembersPanel extends JPanel {
 
             @Override
             protected void done() {
-                btnRefreshMembers.setEnabled(true);
-                btnSearchMember.setEnabled(true);
-                btnShowAllMembers.setEnabled(true);
+                // btnRefreshMembers.setEnabled(true); // Handled by updateComponentStates
+                // btnSearchMember.setEnabled(true);   // Handled by updateComponentStates
+                // btnShowAllMembers.setEnabled(true); // Handled by updateComponentStates
+                updateComponentStates(true); // Re-enable general controls first
+
                 if (errorMessage != null) {
                     JOptionPane.showMessageDialog(MembersPanel.this, errorMessage, "RemoteException", JOptionPane.ERROR_MESSAGE);
-                    disableCrudButtons(); // Re-disable if error
+                    // disableCrudButtons(); // Old name. updateComponentStates(false) would be too broad here.
+                                        // updateComponentStates(true) was called, so specific disabling for export is needed on error.
+                    if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(false);
                 } else {
                     try {
                         List<Member> members = get();
                         populateTableWithMembers(members);
+                        // Set export button state based on table content
+                        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(tableModel.getRowCount() > 0);
                     } catch (Exception e) {
                         e.printStackTrace();
                         JOptionPane.showMessageDialog(MembersPanel.this, "Error processing members list: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(false);
                     }
                 }
             }
@@ -196,12 +222,16 @@ public class MembersPanel extends JPanel {
         if (searchTerm.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter a name to search.", "Search Error", JOptionPane.WARNING_MESSAGE);
             loadMembers(); // Or just return / clear table
+            loadMembers(); // Or just return / clear table
             return;
         }
 
-        btnSearchMember.setEnabled(false);
-        btnRefreshMembers.setEnabled(false); // Disable other buttons during search
-        btnShowAllMembers.setEnabled(false);
+        // updateComponentStates(false); // Call this instead of individual setEnabled(false)
+        // btnSearchMember.setEnabled(false);
+        // btnRefreshMembers.setEnabled(false);
+        // btnShowAllMembers.setEnabled(false);
+        updateComponentStates(false); // This will also handle btnExportMembersPdf initially
+        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(false); // Explicitly ensure export is off during search
 
 
         SwingWorker<List<Member>, Void> worker = new SwingWorker<List<Member>, Void>() {
@@ -219,21 +249,27 @@ public class MembersPanel extends JPanel {
 
             @Override
             protected void done() {
-                btnSearchMember.setEnabled(true);
-                btnRefreshMembers.setEnabled(true);
-                btnShowAllMembers.setEnabled(true);
+                // btnSearchMember.setEnabled(true); // Handled by updateComponentStates
+                // btnRefreshMembers.setEnabled(true); // Handled by updateComponentStates
+                // btnShowAllMembers.setEnabled(true); // Handled by updateComponentStates
+                updateComponentStates(true); // Re-enable general controls first
+
                 if (errorMessage != null) {
                     JOptionPane.showMessageDialog(MembersPanel.this, errorMessage, "Search Exception", JOptionPane.ERROR_MESSAGE);
+                    if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(false);
                 } else {
                     try {
                         List<Member> members = get();
                         populateTableWithMembers(members);
+                        // Set export button state based on table content
+                        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(tableModel.getRowCount() > 0);
                         if (members == null || members.isEmpty()) {
                             JOptionPane.showMessageDialog(MembersPanel.this, "No members found matching '" + searchTerm + "'.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
                         JOptionPane.showMessageDialog(MembersPanel.this, "Error processing search results: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        if(btnExportMembersPdf != null) btnExportMembersPdf.setEnabled(false);
                     }
                 }
             }
@@ -433,6 +469,155 @@ public class MembersPanel extends JPanel {
             }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a member to delete.", "No Member Selected", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void exportMembersToPdf() {
+        if (tableModel.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Members PDF");
+        fileChooser.setSelectedFile(new File("MembersList.pdf"));
+        // Add PDF file filter
+        javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("PDF Documents", "pdf");
+        fileChooser.setFileFilter(filter);
+
+        int userSelection = fileChooser.showSaveDialog(this);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            // Ensure .pdf extension
+            if (!fileToSave.getAbsolutePath().toLowerCase().endsWith(".pdf")) {
+                fileToSave = new File(fileToSave.getAbsolutePath() + ".pdf");
+            }
+
+            // Confirm overwrite
+            if (fileToSave.exists()) {
+                int response = JOptionPane.showConfirmDialog(this,
+                                "The file already exists. Do you want to overwrite it?",
+                                "Confirm Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (response != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+
+            try (PDDocument document = new PDDocument()) {
+                PDPage page = new PDPage();
+                document.addPage(page);
+
+                float margin = 50;
+                float yStart = page.getMediaBox().getHeight() - margin;
+                float tableTop = yStart - 20; // Space for title
+                float yPosition = tableTop;
+                // float tableWidth = page.getMediaBox().getWidth() - 2 * margin; // Not directly used for now
+                float bottomMargin = 70;
+                float lineHeight = 15f;
+                int rowsPerPage = (int) ((tableTop - bottomMargin) / lineHeight) -1; // -1 for header row on new pages
+
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                // Title
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.beginText();
+                contentStream.newLineAtOffset(margin, yStart);
+                contentStream.showText("Members List");
+                contentStream.endText();
+                yPosition -= 30;
+
+                // Table Headers
+                PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                float headerFontSize = 10f;
+
+                // Define column widths (approximate, adjust as needed)
+                // "ID", "Full Name", "Gender", "Phone", "Birthdate", "Group ID"
+                float[] columnWidths = {40, 160, 70, 100, 80, 60};
+                float currentX = margin;
+
+                // Function to draw headers (to reuse for new pages)
+                Runnable drawHeaders = () -> {
+                    try {
+                        contentStream.setFont(headerFont, headerFontSize);
+                        float x = margin;
+                        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+                            contentStream.beginText();
+                            contentStream.newLineAtOffset(x, yPosition);
+                            contentStream.showText(tableModel.getColumnName(i));
+                            contentStream.endText();
+                            x += columnWidths[i];
+                        }
+                    } catch (IOException e) {
+                        // This lambda is within a try-catch block for the outer method,
+                        // but direct IOExceptions from contentStream here need handling or rethrowing.
+                        // For simplicity, we assume it won't throw if the stream is valid.
+                         e.printStackTrace(); // Or handle more gracefully
+                    }
+                };
+
+                drawHeaders.run();
+                yPosition -= lineHeight * 1.5f; // Extra space after headers
+
+                // Table Data
+                PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                float dataFontSize = 9f;
+                contentStream.setFont(dataFont, dataFontSize);
+                int rowsWrittenOnPage = 0;
+
+                for (int row = 0; row < tableModel.getRowCount(); row++) {
+                    if (rowsWrittenOnPage >= rowsPerPage ) { // New page check
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        contentStream = new PDPageContentStream(document, page);
+                        yPosition = page.getMediaBox().getHeight() - margin - 20; // Reset Y for new page
+                        drawHeaders.run(); // Draw headers on new page
+                        yPosition -= lineHeight * 1.5f;
+                        contentStream.setFont(dataFont, dataFontSize); // Reset to data font
+                        rowsWrittenOnPage = 0;
+                    }
+
+                    currentX = margin;
+                    for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                        Object cellValue = tableModel.getValueAt(row, col);
+                        String text = (cellValue != null) ? cellValue.toString() : "";
+
+                        // Simple text truncation if too long for the column width
+                        // A more sophisticated approach might involve text wrapping or font size reduction.
+                        float colWidth = columnWidths[col] - 2; // Small padding
+                        float textWidth = dataFont.getStringWidth(text) / 1000 * dataFontSize;
+                        if (textWidth > colWidth) {
+                            // Truncate text
+                            StringBuilder sb = new StringBuilder();
+                            for (char c : text.toCharArray()) {
+                                if (dataFont.getStringWidth(sb.toString() + c) / 1000 * dataFontSize < colWidth - (dataFont.getStringWidth("...")/1000 * dataFontSize) ) {
+                                    sb.append(c);
+                                } else {
+                                    break;
+                                }
+                            }
+                            text = sb.toString() + "...";
+                        }
+
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(currentX, yPosition);
+                        contentStream.showText(text);
+                        contentStream.endText();
+                        currentX += columnWidths[col];
+                    }
+                    yPosition -= lineHeight;
+                    rowsWrittenOnPage++;
+                }
+
+                contentStream.close();
+                document.save(fileToSave);
+                JOptionPane.showMessageDialog(this, "Members list exported successfully to:\n" + fileToSave.getAbsolutePath(), "PDF Export Success", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error exporting to PDF: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 }

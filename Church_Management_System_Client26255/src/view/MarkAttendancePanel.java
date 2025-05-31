@@ -13,6 +13,7 @@ import service.EventAttendanceService;
 import service.MemberService;
 import util.UserSession; // To get current user's details
 import java.util.List;
+import java.util.Collections; // Added import
 import java.util.Date;
 import java.util.stream.Collectors;
 import java.sql.Timestamp;
@@ -135,7 +136,7 @@ public class MarkAttendancePanel extends JPanel {
                     if (currentUserId <= 0) { // Assuming 0 or negative is not a valid member ID for regular users
                         errorMessage = "Invalid user session. Please log in again.";
                         // System.err.println("MarkAttendancePanel: Invalid accountId for current user: " + currentUserId);
-                        return List.of();
+                        return java.util.Collections.emptyList();
                     }
 
                     // This assumes memberService.getMemberById(int id) exists and is defined in the RMI interface
@@ -143,14 +144,14 @@ public class MarkAttendancePanel extends JPanel {
 
                     if (currentMember == null) {
                         errorMessage = "Could not retrieve your member details for ID: " + currentUserId;
-                        return List.of();
+                        return java.util.Collections.emptyList();
                     }
                     memberFetchSuccess = true;
 
                     // Step 2: Fetch and filter upcoming events
                     List<Event> allEvents = eventService.retreiveAll();
                     if (allEvents == null) { // Service might return null
-                         return List.of();
+                         return java.util.Collections.emptyList();
                     }
 
                     Date currentTime = new Date(); // Current time, not Timestamp for 'after' comparison with event's Timestamp
@@ -163,13 +164,13 @@ public class MarkAttendancePanel extends JPanel {
                     errorMessage = "Error communicating with the server: " + e.getMessage();
                     currentMember = null; // Ensure member is null on error
                     memberFetchSuccess = false;
-                    return List.of(); // Return empty list on RMI error
+                    return java.util.Collections.emptyList(); // Return empty list on RMI error
                 } catch (Exception e) { // Catch any other unexpected errors during fetch
                     e.printStackTrace();
                     errorMessage = "An unexpected error occurred: " + e.getMessage();
                     currentMember = null;
                     memberFetchSuccess = false;
-                    return List.of();
+                    return java.util.Collections.emptyList();
                 }
             }
 
