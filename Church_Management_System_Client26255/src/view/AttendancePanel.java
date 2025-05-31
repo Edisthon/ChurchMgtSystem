@@ -163,6 +163,7 @@ public class AttendancePanel extends JPanel {
         worker.execute();
     }
 
+
     private void exportAttendanceToPdf() {
     if (tableModel.getRowCount() == 0) {
         JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
@@ -221,15 +222,12 @@ public class AttendancePanel extends JPanel {
                 totalWidth += columnWidths[i];
             }
 
-            float x = margin;
-            for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
+
                 contentStream.beginText();
                 contentStream.newLineAtOffset(x, yPosition);
                 contentStream.showText(tableModel.getColumnName(i));
                 contentStream.endText();
-                x += columnWidths[i];
-            }
+
 
             yPosition -= lineHeight * 1.5f;
 

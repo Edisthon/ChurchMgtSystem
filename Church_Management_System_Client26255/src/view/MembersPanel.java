@@ -473,6 +473,21 @@ public class MembersPanel extends JPanel {
         }
     }
 
+    private float drawPdfTableHeaders(PDPageContentStream contentStream, PDType1Font font, float fontSize,
+                                     float yPosition, float margin, float[] columnWidths,
+                                     DefaultTableModel currentTableModel, float lineHeight) throws IOException {
+        contentStream.setFont(font, fontSize);
+        float currentX = margin;
+        for (int i = 0; i < currentTableModel.getColumnCount(); i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(currentX, yPosition);
+            contentStream.showText(currentTableModel.getColumnName(i));
+            contentStream.endText();
+            currentX += columnWidths[i];
+        }
+        return yPosition - (lineHeight * 1.5f); // Return new Y position after headers & spacing
+    }
+
     private void exportMembersToPdf() {
         if (tableModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
@@ -482,7 +497,6 @@ public class MembersPanel extends JPanel {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Members PDF");
         fileChooser.setSelectedFile(new File("MembersList.pdf"));
-        // Add PDF file filter
         javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("PDF Documents", "pdf");
         fileChooser.setFileFilter(filter);
 
@@ -490,12 +504,10 @@ public class MembersPanel extends JPanel {
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
-            // Ensure .pdf extension
             if (!fileToSave.getAbsolutePath().toLowerCase().endsWith(".pdf")) {
                 fileToSave = new File(fileToSave.getAbsolutePath() + ".pdf");
             }
 
-            // Confirm overwrite
             if (fileToSave.exists()) {
                 int response = JOptionPane.showConfirmDialog(this,
                                 "The file already exists. Do you want to overwrite it?",
@@ -511,12 +523,11 @@ public class MembersPanel extends JPanel {
 
                 float margin = 50;
                 float yStart = page.getMediaBox().getHeight() - margin;
-                float tableTop = yStart - 20; // Space for title
+                float tableTop = yStart - 20;
                 float yPosition = tableTop;
-                // float tableWidth = page.getMediaBox().getWidth() - 2 * margin; // Not directly used for now
                 float bottomMargin = 70;
                 float lineHeight = 15f;
-                int rowsPerPage = (int) ((tableTop - bottomMargin) / lineHeight) -1; // -1 for header row on new pages
+                int rowsPerPage = (int) ((tableTop - bottomMargin) / lineHeight) -1;
 
                 PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
@@ -531,34 +542,9 @@ public class MembersPanel extends JPanel {
                 // Table Headers
                 PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
                 float headerFontSize = 10f;
-
-                // Define column widths (approximate, adjust as needed)
-                // "ID", "Full Name", "Gender", "Phone", "Birthdate", "Group ID"
                 float[] columnWidths = {40, 160, 70, 100, 80, 60};
-                float currentX = margin;
 
-                // Function to draw headers (to reuse for new pages)
-                Runnable drawHeaders = () -> {
-                    try {
-                        contentStream.setFont(headerFont, headerFontSize);
-                        float x = margin;
-                        for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                            contentStream.beginText();
-                            contentStream.newLineAtOffset(x, yPosition);
-                            contentStream.showText(tableModel.getColumnName(i));
-                            contentStream.endText();
-                            x += columnWidths[i];
-                        }
-                    } catch (IOException e) {
-                        // This lambda is within a try-catch block for the outer method,
-                        // but direct IOExceptions from contentStream here need handling or rethrowing.
-                        // For simplicity, we assume it won't throw if the stream is valid.
-                         e.printStackTrace(); // Or handle more gracefully
-                    }
-                };
-
-                drawHeaders.run();
-                yPosition -= lineHeight * 1.5f; // Extra space after headers
+                yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
 
                 // Table Data
                 PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
@@ -567,29 +553,25 @@ public class MembersPanel extends JPanel {
                 int rowsWrittenOnPage = 0;
 
                 for (int row = 0; row < tableModel.getRowCount(); row++) {
-                    if (rowsWrittenOnPage >= rowsPerPage ) { // New page check
+                    if (rowsWrittenOnPage >= rowsPerPage ) {
                         contentStream.close();
                         page = new PDPage();
                         document.addPage(page);
                         contentStream = new PDPageContentStream(document, page);
-                        yPosition = page.getMediaBox().getHeight() - margin - 20; // Reset Y for new page
-                        drawHeaders.run(); // Draw headers on new page
-                        yPosition -= lineHeight * 1.5f;
-                        contentStream.setFont(dataFont, dataFontSize); // Reset to data font
+                        yPosition = page.getMediaBox().getHeight() - margin - 20;
+                        yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
+                        contentStream.setFont(dataFont, dataFontSize);
                         rowsWrittenOnPage = 0;
                     }
 
-                    currentX = margin;
+                    float currentX = margin;
                     for (int col = 0; col < tableModel.getColumnCount(); col++) {
                         Object cellValue = tableModel.getValueAt(row, col);
                         String text = (cellValue != null) ? cellValue.toString() : "";
 
-                        // Simple text truncation if too long for the column width
-                        // A more sophisticated approach might involve text wrapping or font size reduction.
-                        float colWidth = columnWidths[col] - 2; // Small padding
+                        float colWidth = columnWidths[col] - 2;
                         float textWidth = dataFont.getStringWidth(text) / 1000 * dataFontSize;
                         if (textWidth > colWidth) {
-                            // Truncate text
                             StringBuilder sb = new StringBuilder();
                             for (char c : text.toCharArray()) {
                                 if (dataFont.getStringWidth(sb.toString() + c) / 1000 * dataFontSize < colWidth - (dataFont.getStringWidth("...")/1000 * dataFontSize) ) {

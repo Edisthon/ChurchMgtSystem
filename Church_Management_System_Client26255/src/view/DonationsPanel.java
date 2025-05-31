@@ -359,34 +359,7 @@ public class DonationsPanel extends JPanel {
             }
         }
 
-        try (PDDocument document = new PDDocument()) {
-            PDPage page = new PDPage();
-            document.addPage(page);
 
-            float margin = 40; // Slightly smaller margin
-            float yStart = page.getMediaBox().getHeight() - margin;
-            float tableTop = yStart - 25;
-            float yPosition = tableTop;
-            float bottomMargin = 60;
-            float lineHeight = 14f;
-            // "ID", "Donor Name", "Amount", "Date", "Event ID", "Notes"
-            float[] columnWidths = {30, 130, 80, 110, 60, 120};
-            int rowsPerPage = (int) ((tableTop - bottomMargin - (lineHeight * 2)) / lineHeight); // Reserve space for headers and total
-
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
-
-            // Title
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 18);
-            contentStream.beginText();
-            contentStream.newLineAtOffset(margin, yStart);
-            contentStream.showText("Donation Report");
-            contentStream.endText();
-            yPosition -= 30;
-
-            // Draw headers
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
-            float x = margin;
-            for (int i = 0; i < tableModel.getColumnCount(); i++) {
                 contentStream.beginText();
                 contentStream.newLineAtOffset(x, yPosition);
                 contentStream.showText(tableModel.getColumnName(i));
@@ -395,22 +368,7 @@ public class DonationsPanel extends JPanel {
             }
             yPosition -= lineHeight * 1.5f;
 
-            // Table Data
-            contentStream.setFont(PDType1Font.HELVETICA, 9);
-            int rowsWrittenOnPage = 0;
 
-            for (int row = 0; row < tableModel.getRowCount(); row++) {
-                if (rowsWrittenOnPage >= rowsPerPage && row < tableModel.getRowCount() - 1) { // Check if there's more data for new page
-                    contentStream.close();
-                    page = new PDPage();
-                    document.addPage(page);
-                    contentStream = new PDPageContentStream(document, page);
-                    yPosition = page.getMediaBox().getHeight() - margin - 20; // Reset Y for new page
-
-                    // Re-draw headers for the new page
-                    contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
-                    x = margin;
-                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
                         contentStream.beginText();
                         contentStream.newLineAtOffset(x, yPosition);
                         contentStream.showText(tableModel.getColumnName(i));
@@ -422,33 +380,7 @@ public class DonationsPanel extends JPanel {
                     rowsWrittenOnPage = 0;
                 }
 
-                float currentX = margin;
-                for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                    Object cellValue = tableModel.getValueAt(row, col);
-                    String text = (cellValue != null) ? cellValue.toString() : "";
 
-                    float colWidth = columnWidths[col] - 2;
-                    float textWidth = PDType1Font.HELVETICA.getStringWidth(text) / 1000 * 9f;
-                    if (textWidth > colWidth) {
-                        StringBuilder sb = new StringBuilder();
-                        for (char c : text.toCharArray()) {
-                            if (PDType1Font.HELVETICA.getStringWidth(sb.toString() + c) / 1000 * 9f < colWidth - (PDType1Font.HELVETICA.getStringWidth("...")/1000 * 9f)) {
-                                sb.append(c);
-                            } else {
-                                break;
-                            }
-                        }
-                        text = sb.toString() + "...";
-                    }
-                    contentStream.beginText();
-                    contentStream.newLineAtOffset(currentX, yPosition);
-                    contentStream.showText(text);
-                    contentStream.endText();
-                    currentX += columnWidths[col];
-                }
-                yPosition -= lineHeight;
-                rowsWrittenOnPage++;
-            }
 
             // Write Summary Total
             yPosition -= lineHeight * 2; // Extra space before total
