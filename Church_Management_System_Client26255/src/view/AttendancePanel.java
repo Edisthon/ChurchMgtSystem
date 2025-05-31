@@ -24,6 +24,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
+
 public class AttendancePanel extends JPanel {
 
     private JTable attendanceTable;
@@ -163,122 +164,134 @@ public class AttendancePanel extends JPanel {
         worker.execute();
     }
 
+    // Removed the redundant loadAttendanceRecordsWithWorker() method
+
+    private float drawPdfTableHeaders(PDPageContentStream contentStream, PDType1Font font, float fontSize,
+                                     float yPosition, float margin, float[] columnWidths,
+                                     DefaultTableModel currentTableModel, float lineHeight) throws IOException {
+        contentStream.setFont(font, fontSize);
+        float currentX = margin;
+        for (int i = 0; i < currentTableModel.getColumnCount(); i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(currentX, yPosition);
+            contentStream.showText(currentTableModel.getColumnName(i));
+            contentStream.endText();
+            currentX += columnWidths[i];
+        }
+        return yPosition - (lineHeight * 1.5f); // Return new Y position after headers & spacing
+    }
 
     private void exportAttendanceToPdf() {
-    if (tableModel.getRowCount() == 0) {
-        JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    JFileChooser fileChooser = new JFileChooser();
-    fileChooser.setDialogTitle("Save Attendance Records PDF");
-    fileChooser.setSelectedFile(new File("AttendanceRecords.pdf"));
-    javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("PDF Documents", "pdf");
-    fileChooser.setFileFilter(filter);
-
-    int userSelection = fileChooser.showSaveDialog(this);
-
-    if (userSelection == JFileChooser.APPROVE_OPTION) {
-        File fileToSave = fileChooser.getSelectedFile();
-        if (!fileToSave.getAbsolutePath().toLowerCase().endsWith(".pdf")) {
-            fileToSave = new File(fileToSave.getAbsolutePath() + ".pdf");
+        if (tableModel.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
-        if (fileToSave.exists()) {
-            int response = JOptionPane.showConfirmDialog(this,
-                            "The file already exists. Do you want to overwrite it?",
-                            "Confirm Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (response != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Attendance Records PDF");
+        fileChooser.setSelectedFile(new File("AttendanceRecords.pdf"));
+        javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("PDF Documents", "pdf");
+        fileChooser.setFileFilter(filter);
 
-        try (PDDocument document = new PDDocument()) {
-            PDPage page = new PDPage();
-            document.addPage(page);
+        int userSelection = fileChooser.showSaveDialog(this);
 
-            float margin = 50;
-            float yStart = page.getMediaBox().getHeight() - margin;
-            float tableTop = yStart - 20;
-            float yPosition = tableTop;
-            float bottomMargin = 70;
-            float lineHeight = 15f;
-            int rowsPerPage = (int) ((tableTop - bottomMargin) / lineHeight) - 1;
-
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
-
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-            contentStream.beginText();
-            contentStream.newLineAtOffset(margin, yStart);
-            contentStream.showText("Attendance Records");
-            contentStream.endText();
-            yPosition -= 30;
-
-            // Adjust columnWidths based on actual table columns
-            float[] columnWidths = new float[tableModel.getColumnCount()];
-            float totalWidth = 0;
-            for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                columnWidths[i] = 100; // Default width for simplicity
-                totalWidth += columnWidths[i];
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            if (!fileToSave.getAbsolutePath().toLowerCase().endsWith(".pdf")) {
+                fileToSave = new File(fileToSave.getAbsolutePath() + ".pdf");
             }
 
+            if (fileToSave.exists()) {
+                int response = JOptionPane.showConfirmDialog(this,
+                                "The file already exists. Do you want to overwrite it?",
+                                "Confirm Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (response != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
 
+            try (PDDocument document = new PDDocument()) {
+                PDPage page = new PDPage();
+                document.addPage(page);
+
+                float margin = 50;
+                float yStart = page.getMediaBox().getHeight() - margin;
+                float tableTop = yStart - 20;
+                float yPosition = tableTop;
+                float bottomMargin = 70;
+                float lineHeight = 15f;
+                int rowsPerPage = (int) ((tableTop - bottomMargin) / lineHeight) -1;
+
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                // Use Standard14Fonts for font instantiation
+                PDType1Font titleFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+
+                contentStream.setFont(titleFont, 16);
                 contentStream.beginText();
-                contentStream.newLineAtOffset(x, yPosition);
-                contentStream.showText(tableModel.getColumnName(i));
+                contentStream.newLineAtOffset(margin, yStart);
+                contentStream.showText("Attendance Records");
                 contentStream.endText();
+                yPosition -= 30;
 
+                float headerFontSize = 10f;
+                // "Attendance ID", "Event Name", "Member Name", "Check-in Time"
+                float[] columnWidths = {80, 150, 150, 120};
 
-            yPosition -= lineHeight * 1.5f;
+                yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
 
-            PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-            float dataFontSize = 9f;
-            contentStream.setFont(dataFont, dataFontSize);
-            int rowsWrittenOnPage = 0;
+                float dataFontSize = 9f;
+                contentStream.setFont(dataFont, dataFontSize);
+                int rowsWrittenOnPage = 0;
 
-            for (int row = 0; row < tableModel.getRowCount(); row++) {
-                if (rowsWrittenOnPage >= rowsPerPage) {
-                    contentStream.close();
-                    page = new PDPage();
-                    document.addPage(page);
-                    contentStream = new PDPageContentStream(document, page);
-                    yPosition = page.getMediaBox().getHeight() - margin - 20;
-                    x = margin;
-                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(x, yPosition);
-                        contentStream.showText(tableModel.getColumnName(i));
-                        contentStream.endText();
-                        x += columnWidths[i];
+                for (int row = 0; row < tableModel.getRowCount(); row++) {
+                    if (rowsWrittenOnPage >= rowsPerPage) {
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        contentStream = new PDPageContentStream(document, page);
+                        yPosition = page.getMediaBox().getHeight() - margin - 20;
+                        yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
+                        contentStream.setFont(dataFont, dataFontSize);
+                        rowsWrittenOnPage = 0;
                     }
-                    yPosition -= lineHeight * 1.5f;
-                    rowsWrittenOnPage = 0;
+
+                    float currentX = margin;
+                    for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                        Object cellValue = tableModel.getValueAt(row, col);
+                        String text = (cellValue != null) ? cellValue.toString() : "";
+
+                        float colWidth = columnWidths[col] - 2;
+                        float textWidth = dataFont.getStringWidth(text) / 1000 * dataFontSize;
+                        if (textWidth > colWidth) {
+                            StringBuilder sb = new StringBuilder();
+                            for (char c : text.toCharArray()) {
+                                if (dataFont.getStringWidth(sb.toString() + c) / 1000 * dataFontSize < colWidth - (dataFont.getStringWidth("...")/1000 * dataFontSize) ) {
+                                    sb.append(c);
+                                } else { break; }
+                            }
+                            text = sb.toString() + "...";
+                        }
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(currentX, yPosition);
+                        contentStream.showText(text);
+                        contentStream.endText();
+                        currentX += columnWidths[col];
+                    }
+                    yPosition -= lineHeight;
+                    rowsWrittenOnPage++;
                 }
 
-                x = margin;
-                for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                    Object cellValue = tableModel.getValueAt(row, col);
-                    String text = (cellValue != null) ? cellValue.toString() : "";
+                contentStream.close();
+                document.save(fileToSave);
+                JOptionPane.showMessageDialog(this, "Attendance records exported to:\n" + fileToSave.getAbsolutePath(), "PDF Export Success", JOptionPane.INFORMATION_MESSAGE);
 
-                    contentStream.beginText();
-                    contentStream.newLineAtOffset(x + 2, yPosition);
-                    contentStream.showText(text);
-                    contentStream.endText();
-                    x += columnWidths[col];
-                }
-
-                rowsWrittenOnPage++;
-                yPosition -= lineHeight;
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error exporting to PDF: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
             }
-
-            contentStream.close();
-            document.save(fileToSave);
-            JOptionPane.showMessageDialog(this, "PDF successfully created and saved.", "Export Successful", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error while exporting to PDF: " + e.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-}
-
 }

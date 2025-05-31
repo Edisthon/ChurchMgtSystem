@@ -21,7 +21,6 @@ import java.util.Date; // For filtering upcoming events
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.text.SimpleDateFormat;
 
 public class MakeDonationPanel extends JPanel {
 

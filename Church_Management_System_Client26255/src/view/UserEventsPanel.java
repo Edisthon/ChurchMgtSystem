@@ -16,7 +16,6 @@ import java.text.SimpleDateFormat;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.RemoteException;
-import javax.swing.table.TableRowSorter;
 
 public class UserEventsPanel extends JPanel {
 
