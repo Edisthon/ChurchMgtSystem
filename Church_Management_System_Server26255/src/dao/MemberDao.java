@@ -2,9 +2,12 @@ package dao;
 
 import dao.HibernateUtil;
 import model.Member;
-import java.util.List; // Example for custom methods
+import java.util.List;
+import java.util.ArrayList; // Added for searchMembersByName
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query; // Added for searchMembersByName
+import util.HibernateUtil; // Corrected import assuming HibernateUtil is in util
 
 public class MemberDao{
    
@@ -56,15 +59,27 @@ public class MemberDao{
      
       public List<Member> retreiveAll(){
         Session ss= HibernateUtil.getSessionFactory().openSession();
-        List<Member> memberList=ss.createQuery("select mem from"
-                + "Member mem").list();
+        // Corrected HQL query
+        List<Member> memberList=ss.createQuery("FROM Member mem", Member.class).list();
         ss.close();
         return memberList;
     }
-    public Member retrieveById(Member member){
+    public Member retrieveById(Member member){ // Consider changing parameter to int memberId
         Session ss= HibernateUtil.getSessionFactory().openSession();
         Member members=(Member)ss.get(Member.class,member.getMemberId());
         ss.close();
         return members;
+    }
+
+    public List<Member> searchMembersByName(String name) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Member> query = session.createQuery(
+                "FROM Member m WHERE lower(m.fullName) LIKE lower(:name)", Member.class);
+            query.setParameter("name", "%" + name + "%"); // Wildcards for contains search
+            return query.list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>(); // Return empty list on error
+        }
     }
 }
