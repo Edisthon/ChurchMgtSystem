@@ -6,6 +6,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import util.UserSession;
 import view.UserEventsPanel; // Added for UserEventsPanel integration
+import view.MarkAttendancePanel; // Added for MarkAttendancePanel integration
+import view.UserProfilePanel; // Added for UserProfilePanel integration
+import view.MakeDonationPanel; // Added for MakeDonationPanel integration
+import view.UserDonationHistoryPanel; // Added for UserDonationHistoryPanel integration
 // view.LoginForm is in the same package, so direct import is not strictly necessary
 // import view.LoginForm;
 
@@ -16,6 +20,10 @@ public class UserDashboard extends JFrame {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private UserEventsPanel userEventsPanel; // Declare UserEventsPanel instance
+    private MarkAttendancePanel markAttendancePanel; // Declare MarkAttendancePanel instance
+    private UserProfilePanel userProfilePanel; // Declare UserProfilePanel instance
+    private MakeDonationPanel makeDonationPanel; // Declare MakeDonationPanel instance
+    private UserDonationHistoryPanel userDonationHistoryPanel; // Declare UserDonationHistoryPanel instance
 
     private JButton btnUpcomingEvents;
     private JButton btnMarkAttendance;
@@ -86,6 +94,22 @@ public class UserDashboard extends JFrame {
         userEventsPanel = new UserEventsPanel();
         contentPanel.add(userEventsPanel, "UserEventsPanel"); // Key for CardLayout
 
+        // Instantiate and add MarkAttendancePanel
+        markAttendancePanel = new MarkAttendancePanel();
+        contentPanel.add(markAttendancePanel, "MarkAttendancePanel"); // Key for CardLayout
+
+        // Instantiate and add UserProfilePanel
+        userProfilePanel = new UserProfilePanel();
+        contentPanel.add(userProfilePanel, "UserProfilePanel"); // Key for CardLayout
+
+        // Instantiate and add MakeDonationPanel
+        makeDonationPanel = new MakeDonationPanel();
+        contentPanel.add(makeDonationPanel, "MakeDonationPanel"); // Key for CardLayout
+
+        // Instantiate and add UserDonationHistoryPanel
+        userDonationHistoryPanel = new UserDonationHistoryPanel();
+        contentPanel.add(userDonationHistoryPanel, "UserDonationHistoryPanel"); // Key for CardLayout
+
         mainPanel.add(contentPanel, BorderLayout.CENTER);
         cardLayout.show(contentPanel, "WelcomePanel");
 
@@ -95,23 +119,19 @@ public class UserDashboard extends JFrame {
         );
 
         btnMarkAttendance.addActionListener(e ->
-            JOptionPane.showMessageDialog(UserDashboard.this, "Mark Attendance clicked!")
-            // cardLayout.show(contentPanel, "MarkAttendancePanel");
+            cardLayout.show(contentPanel, "MarkAttendancePanel")
         );
 
         btnMyProfile.addActionListener(e ->
-            JOptionPane.showMessageDialog(UserDashboard.this, "My Profile clicked!")
-            // cardLayout.show(contentPanel, "MyProfilePanel");
+            cardLayout.show(contentPanel, "UserProfilePanel")
         );
 
         btnMakeDonation.addActionListener(e ->
-            JOptionPane.showMessageDialog(UserDashboard.this, "Make a Donation clicked!")
-            // cardLayout.show(contentPanel, "MakeDonationPanel");
+            cardLayout.show(contentPanel, "MakeDonationPanel")
         );
 
         btnMyDonations.addActionListener(e ->
-            JOptionPane.showMessageDialog(UserDashboard.this, "My Donations clicked!")
-            // cardLayout.show(contentPanel, "MyDonationsPanel");
+            cardLayout.show(contentPanel, "UserDonationHistoryPanel")
         );
 
         btnLogout.addActionListener(new ActionListener() {
