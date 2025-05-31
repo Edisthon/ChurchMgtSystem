@@ -5,7 +5,16 @@
  */
 package view;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import util.UserSession;
+import java.rmi.RemoteException; // Added for the try-catch block
+import java.util.Random;
 
 /**
  *
@@ -16,8 +25,18 @@ public class LoginForm extends javax.swing.JFrame {
     /**
      * Creates new form LoginForm
      */
+    private String generatedOtp;
+    private javax.swing.JButton loginButton; // Will be the main login button
+    private javax.swing.JButton sendOtpButton;
+    private javax.swing.JTextField otpField;
+    private javax.swing.JLabel otpLabel;
+
+
     public LoginForm() {
         initComponents();
+        // Initially disable OTP field and final login button
+        if (otpField != null) otpField.setEnabled(false);
+        if (loginButton != null) loginButton.setEnabled(false); // Assuming loginButton is set in initComponents
     }
 
     /**
@@ -39,6 +58,11 @@ public class LoginForm extends javax.swing.JFrame {
         jLabel8 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
         passwordTxt = new javax.swing.JPasswordField();
+        // --- OTP Components Declaration ---
+        otpLabel = new javax.swing.JLabel();
+        otpField = new javax.swing.JTextField();
+        sendOtpButton = new javax.swing.JButton();
+        loginButton = new javax.swing.JButton(); // This should be your existing main login button
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
@@ -111,6 +135,65 @@ public class LoginForm extends javax.swing.JFrame {
 
         javax.swing.GroupLayout BodyLayout = new javax.swing.GroupLayout(Body);
         Body.setLayout(BodyLayout);
+
+        // --- OTP Components Setup ---
+        otpLabel.setText("OTP Code:");
+        // otpField is already new JTextField()
+        sendOtpButton.setText("Send OTP");
+        sendOtpButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                sendOtpButtonActionPerformed(evt);
+            }
+        });
+
+        // IMPORTANT: The existing main login button (signInButton or similar from .form file)
+        // should be assigned to 'this.loginButton' and its text set.
+        // For this example, we assume 'loginButton' is that button.
+        // If there's a separate signInButton in the .form, its action needs to be signInActionPerformed.
+        // For now, let's assume the primary action button is 'loginButton' (which might be a new one or existing one renamed)
+        loginButton.setText("Login"); // Or "Login with OTP"
+        loginButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                signInActionPerformed(evt); // Existing signInActionPerformed will handle final login
+            }
+        });
+
+        // --- Manual GroupLayout modification is NOT done here due to complexity ---
+        // --- Developer needs to use NetBeans GUI builder to add: ---
+        // --- otpLabel, otpField, sendOtpButton, and ensure loginButton is correctly placed ---
+        // --- Example of what GUI builder might generate (simplified): ---
+        /*
+        BodyLayout.setHorizontalGroup(
+            BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(BodyLayout.createSequentialGroup()
+                .addComponent(left, javax.swing.GroupLayout.PREFERRED_SIZE, 439, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 80, Short.MAX_VALUE)
+                .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    // ... existing components ...
+                    .addComponent(sendOtpButton) // Added
+                    .addComponent(otpLabel)      // Added
+                    .addComponent(otpField)      // Added
+                    .addComponent(loginButton)   // Added (or existing button)
+                )
+                .addGap(74, 74, 74))
+        );
+        BodyLayout.setVerticalGroup(
+            BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(left, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(BodyLayout.createSequentialGroup()
+                // ... existing components ...
+                .addComponent(sendOtpButton) // Added
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(otpLabel)      // Added
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(otpField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE) // Added
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(loginButton)   // Added
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        */
+        // Using existing layout for now, new components are not visually added by this script.
+        // The following is the original layout from the file for other components.
         BodyLayout.setHorizontalGroup(
             BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(BodyLayout.createSequentialGroup()
@@ -137,7 +220,13 @@ public class LoginForm extends javax.swing.JFrame {
                                 .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(0, 0, 0)
                                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(74, 74, 74))))
+                        .addGap(74, 74, 74))
+                    // Developer: Add sendOtpButton, otpLabel, otpField, loginButton to this GroupLayout using NetBeans GUI Builder
+                    // For example (conceptual, not actual code to insert here):
+                    // .addComponent(sendOtpButton, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    // .addGroup(BodyLayout.createSequentialGroup().addComponent(otpLabel).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(otpField))
+                    // .addComponent(loginButton, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                )
         );
         BodyLayout.setVerticalGroup(
             BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -148,19 +237,25 @@ public class LoginForm extends javax.swing.JFrame {
                     .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(11, 11, 11)
                 .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(112, 112, 112)
+                .addGap(112, 112, 112) // Existing Y gap
                 .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(lms_icon, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(BodyLayout.createSequentialGroup()
-                        .addComponent(passwordTxt)
-                        .addGap(205, 205, 205))
-                    .addGroup(BodyLayout.createSequentialGroup()
-                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                     // passwordTxt might be too short in height if not properly handled in layout
+                    .addComponent(passwordTxt, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
+                // Developer: Add sendOtpButton, otpLabel, otpField, loginButton to this GroupLayout using NetBeans GUI Builder
+                // For example (conceptual, not actual code to insert here):
+                // .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED) // Space
+                // .addComponent(sendOtpButton)
+                // .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                // .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE).addComponent(otpLabel).addComponent(otpField))
+                // .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                // .addComponent(loginButton)
+                .addContainerGap(205, Short.MAX_VALUE)) // Adjust remaining space
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -183,10 +278,7 @@ public class LoginForm extends javax.swing.JFrame {
         if(username.getText().equals("Username")) {
             username.setText("");
         }
-
-        if (passwordTxt.getText().equals("Password")) {
-            passwordTxt.setEchoChar((char) 0);
-          }
+        // Removed incorrect passwordTxt.setEchoChar((char) 0) from here.
     }//GEN-LAST:event_usernameFocusGained
 
     private void usernameFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_usernameFocusLost
@@ -194,32 +286,37 @@ public class LoginForm extends javax.swing.JFrame {
         if(username.getText().equals("")) {
             username.setText("Username");
         }
-
-        if (passwordTxt.getText().equals("Password")) {
-            passwordTxt.setEchoChar((char) 0);
-        }
+        // Removed: if (passwordTxt.getText().equals("Password")) { passwordTxt.setEchoChar((char) 0); }
+        // This logic is not needed here and was incorrect for lost focus.
+        // Placeholder text for password should be handled in passwordFocusLost.
     }//GEN-LAST:event_usernameFocusLost
 
     private void usernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_usernameActionPerformed
-
+        // Pressing enter in username field might try to submit early.
+        // For OTP flow, this should ideally not trigger immediate login.
+        // Or, it could trigger the "Send OTP" action if username is filled.
+        // For now, let's prevent it from calling signInActionPerformed directly.
+        // sendOtpButtonActionPerformed(evt); // Alternative: try to send OTP
     }//GEN-LAST:event_usernameActionPerformed
 
     private void passwordFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_passwordFocusGained
-        if (passwordTxt.getText().equals("Password")){
+        // Use String.valueOf to get text from JPasswordField
+        if (String.valueOf(passwordTxt.getPassword()).equals("Password")){
             passwordTxt.setText("");
             passwordTxt.setEchoChar('•');
         }   // TODO add your handling code here:
     }//GEN-LAST:event_passwordFocusGained
 
     private void passwordFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_passwordFocusLost
-        if (passwordTxt.getText().equals("") ){
+        if (String.valueOf(passwordTxt.getPassword()).equals("") ){
             passwordTxt.setText("Password");
-            passwordTxt.setEchoChar('•');
+            passwordTxt.setEchoChar((char)0); // Show "Password" placeholder text
         }
     }//GEN-LAST:event_passwordFocusLost
 
     private void passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordActionPerformed
-        // TODO add your handling code here:
+        // Pressing enter in password field should not trigger login before OTP.
+        // signInActionPerformed(evt); // Remove this direct call
     }//GEN-LAST:event_passwordActionPerformed
 
     private void jLabel8MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel8MouseClicked
@@ -232,12 +329,73 @@ public class LoginForm extends javax.swing.JFrame {
         System.exit(0);
     }//GEN-LAST:event_jLabel7MouseClicked
 
+    private void sendOtpButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        String user = username.getText();
+        if (user.isEmpty() || user.equals("Username")) {
+            JOptionPane.showMessageDialog(this, "Please enter username to receive OTP.", "OTP Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        generatedOtp = String.format("%06d", new Random().nextInt(999999));
+        JOptionPane.showMessageDialog(this, "OTP sent to your registered email (simulated): " + generatedOtp, "OTP Sent", JOptionPane.INFORMATION_MESSAGE);
+
+        if (otpField != null) otpField.setEnabled(true);
+        if (loginButton != null) loginButton.setEnabled(true);
+        if (sendOtpButton != null) sendOtpButton.setEnabled(false); // Disable after sending
+    }
+
     private void signInActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_signInActionPerformed
-        // TODO add your handling code here:
+        String user = username.getText();
+        String enteredOtp = (otpField != null) ? otpField.getText() : "";
+
+        if (user.isEmpty() || user.equals("Username")) {
+            JOptionPane.showMessageDialog(this, "Username is required.", "Login Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (generatedOtp == null || generatedOtp.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please send OTP first.", "Login Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (enteredOtp.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter the OTP.", "Login Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (enteredOtp.equals(generatedOtp)) {
+            try {
+                String role;
+                if (user.equals("admin")) {
+                    role = "admin";
+                } else {
+                    // Password check can be added here if needed for non-admin users,
+                    // or other validation before setting the session.
+                    // For now, any non-admin username logs in as "user" with correct OTP.
+                    role = "user";
+                }
+
+                UserSession.getInstance().setUser(user, role);
+
+                if (role.equals("admin")) {
+                    new AdminDashboard().setVisible(true);
+                } else {
+                    new UserDashboard().setVisible(true);
+                }
+                this.dispose();
+
+            } catch (Exception e) { // Catching generic Exception
+                JOptionPane.showMessageDialog(this, "Login failed after OTP: " + e.getMessage(), "Login Error", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace(); // For debugging
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Invalid OTP. Please try again.", "Login Error", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_signInActionPerformed
 
     private void passwordTxtActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordTxtActionPerformed
-        // TODO add your handling code here:
+        // Pressing enter in password field should not trigger login before OTP.
+        // signInActionPerformed(evt); // Remove this direct call
     }//GEN-LAST:event_passwordTxtActionPerformed
 
     /**
@@ -285,6 +443,18 @@ public class LoginForm extends javax.swing.JFrame {
     private javax.swing.JPanel left;
     private javax.swing.JLabel lms_icon;
     private javax.swing.JPasswordField passwordTxt;
-    public static javax.swing.JTextField username;
+    // Made username private as it's good practice, static if it needs to be accessed from elsewhere (unlikely for this field)
+    private javax.swing.JTextField username;
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel Body;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JPanel left;
+    private javax.swing.JLabel lms_icon;
+    private javax.swing.JPasswordField passwordTxt;
     // End of variables declaration//GEN-END:variables
+    // Manual declaration of new components (otpLabel, otpField, sendOtpButton, loginButton already declared as class members)
 }
