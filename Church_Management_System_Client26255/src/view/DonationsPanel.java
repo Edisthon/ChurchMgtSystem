@@ -332,6 +332,21 @@ public class DonationsPanel extends JPanel {
         worker.execute();
     }
 
+    private float drawPdfTableHeaders(PDPageContentStream contentStream, PDType1Font font, float fontSize,
+                                     float yPosition, float margin, float[] columnWidths,
+                                     DefaultTableModel currentTableModel, float lineHeight) throws IOException {
+        contentStream.setFont(font, fontSize);
+        float currentX = margin;
+        for (int i = 0; i < currentTableModel.getColumnCount(); i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(currentX, yPosition);
+            contentStream.showText(currentTableModel.getColumnName(i));
+            contentStream.endText();
+            currentX += columnWidths[i];
+        }
+        return yPosition - (lineHeight * 1.5f); // Return new Y position after headers & spacing
+    }
+
     private void exportDonationsToPdf() {
         if (tableModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
@@ -365,58 +380,46 @@ public class DonationsPanel extends JPanel {
                 PDPage page = new PDPage();
                 document.addPage(page);
 
-                float margin = 40; // Slightly smaller margin
+                float margin = 40;
                 float yStart = page.getMediaBox().getHeight() - margin;
                 float tableTop = yStart - 25;
                 float yPosition = tableTop;
                 float bottomMargin = 60;
                 float lineHeight = 14f;
-                // "ID", "Donor Name", "Amount", "Date", "Event ID", "Notes"
                 float[] columnWidths = {30, 130, 80, 110, 60, 120};
-                int rowsPerPage = (int) ((tableTop - bottomMargin - (lineHeight * 2)) / lineHeight) ; // Reserve space for headers and total
+                int rowsPerPage = (int) ((tableTop - bottomMargin - (lineHeight * 2)) / lineHeight) ;
 
                 PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-                // Title
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 18);
+                PDType1Font titleFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                PDType1Font summaryFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+
+
+                contentStream.setFont(titleFont, 18);
                 contentStream.beginText();
                 contentStream.newLineAtOffset(margin, yStart);
                 contentStream.showText("Donation Report");
                 contentStream.endText();
                 yPosition -= 30;
 
-                // Function to draw headers
-                Runnable drawHeaders = () -> {
-                    try {
-                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10);
-                        float x = margin;
-                        for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                            contentStream.beginText();
-                            contentStream.newLineAtOffset(x, yPosition);
-                            contentStream.showText(tableModel.getColumnName(i));
-                            contentStream.endText();
-                            x += columnWidths[i];
-                        }
-                    } catch (IOException e) { e.printStackTrace(); }
-                };
+                float headerFontSize = 10f;
+                yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
 
-                drawHeaders.run();
-                yPosition -= lineHeight * 1.5f;
-
-                // Table Data
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                float dataFontSize = 9f;
+                contentStream.setFont(dataFont, dataFontSize);
                 int rowsWrittenOnPage = 0;
 
                 for (int row = 0; row < tableModel.getRowCount(); row++) {
-                    if (rowsWrittenOnPage >= rowsPerPage && row < tableModel.getRowCount() -1 ) { // Check if there's more data for new page
+                    if (rowsWrittenOnPage >= rowsPerPage && row < tableModel.getRowCount() -1 ) {
                         contentStream.close();
                         page = new PDPage();
                         document.addPage(page);
                         contentStream = new PDPageContentStream(document, page);
-                        yPosition = page.getMediaBox().getHeight() - margin - 20; // Reset Y for new page
-                        drawHeaders.run();
-                        yPosition -= lineHeight * 1.5f;
-                        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
+                        yPosition = page.getMediaBox().getHeight() - margin - 20;
+                        yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
+                        contentStream.setFont(dataFont, dataFontSize);
                         rowsWrittenOnPage = 0;
                     }
 
@@ -426,11 +429,12 @@ public class DonationsPanel extends JPanel {
                         String text = (cellValue != null) ? cellValue.toString() : "";
 
                         float colWidth = columnWidths[col] - 2;
-                        float textWidth = PDType1Font.HELVETICA.getStringWidth(text) / 1000 * 9f;
+                        // Use the specific font for width calculation
+                        float textWidth = dataFont.getStringWidth(text) / 1000 * dataFontSize;
                         if (textWidth > colWidth) {
                             StringBuilder sb = new StringBuilder();
                             for (char c : text.toCharArray()) {
-                                if (PDType1Font.HELVETICA.getStringWidth(sb.toString() + c) / 1000 * 9f < colWidth - (PDType1Font.HELVETICA.getStringWidth("...")/1000 * 9f) ) {
+                                if (dataFont.getStringWidth(sb.toString() + c) / 1000 * dataFontSize < colWidth - (dataFont.getStringWidth("...")/1000 * dataFontSize) ) {
                                     sb.append(c);
                                 } else { break; }
                             }
@@ -447,18 +451,18 @@ public class DonationsPanel extends JPanel {
                 }
 
                 // Write Summary Total
-                yPosition -= lineHeight * 2; // Extra space before total
-                if (yPosition < bottomMargin) { // Check if new page needed for total
+                yPosition -= lineHeight * 2;
+                if (yPosition < bottomMargin) {
                     contentStream.close();
                     page = new PDPage();
                     document.addPage(page);
                     contentStream = new PDPageContentStream(document, page);
                     yPosition = page.getMediaBox().getHeight() - margin - 20;
                 }
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 12);
+                contentStream.setFont(summaryFont, 12);
                 contentStream.beginText();
                 contentStream.newLineAtOffset(margin, yPosition);
-                contentStream.showText(lblTotalDonations.getText()); // Get text from the label
+                contentStream.showText(lblTotalDonations.getText());
                 contentStream.endText();
 
                 contentStream.close();

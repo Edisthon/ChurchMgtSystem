@@ -166,6 +166,21 @@ public class AttendancePanel extends JPanel {
 
     // Removed the redundant loadAttendanceRecordsWithWorker() method
 
+    private float drawPdfTableHeaders(PDPageContentStream contentStream, PDType1Font font, float fontSize,
+                                     float yPosition, float margin, float[] columnWidths,
+                                     DefaultTableModel currentTableModel, float lineHeight) throws IOException {
+        contentStream.setFont(font, fontSize);
+        float currentX = margin;
+        for (int i = 0; i < currentTableModel.getColumnCount(); i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(currentX, yPosition);
+            contentStream.showText(currentTableModel.getColumnName(i));
+            contentStream.endText();
+            currentX += columnWidths[i];
+        }
+        return yPosition - (lineHeight * 1.5f); // Return new Y position after headers & spacing
+    }
+
     private void exportAttendanceToPdf() {
         if (tableModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
@@ -209,36 +224,24 @@ public class AttendancePanel extends JPanel {
 
                 PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                // Use Standard14Fonts for font instantiation
+                PDType1Font titleFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+
+                contentStream.setFont(titleFont, 16);
                 contentStream.beginText();
                 contentStream.newLineAtOffset(margin, yStart);
                 contentStream.showText("Attendance Records");
                 contentStream.endText();
                 yPosition -= 30;
 
-                PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
                 float headerFontSize = 10f;
                 // "Attendance ID", "Event Name", "Member Name", "Check-in Time"
                 float[] columnWidths = {80, 150, 150, 120};
 
-                Runnable drawHeaders = () -> {
-                    try {
-                        contentStream.setFont(headerFont, headerFontSize);
-                        float x = margin;
-                        for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                            contentStream.beginText();
-                            contentStream.newLineAtOffset(x, yPosition);
-                            contentStream.showText(tableModel.getColumnName(i));
-                            contentStream.endText();
-                            x += columnWidths[i];
-                        }
-                    } catch (IOException e) { e.printStackTrace(); }
-                };
+                yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
 
-                drawHeaders.run();
-                yPosition -= lineHeight * 1.5f;
-
-                PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
                 float dataFontSize = 9f;
                 contentStream.setFont(dataFont, dataFontSize);
                 int rowsWrittenOnPage = 0;
@@ -250,8 +253,7 @@ public class AttendancePanel extends JPanel {
                         document.addPage(page);
                         contentStream = new PDPageContentStream(document, page);
                         yPosition = page.getMediaBox().getHeight() - margin - 20;
-                        drawHeaders.run();
-                        yPosition -= lineHeight * 1.5f;
+                        yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
                         contentStream.setFont(dataFont, dataFontSize);
                         rowsWrittenOnPage = 0;
                     }

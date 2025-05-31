@@ -7,7 +7,7 @@ package view;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JButton;
+import javax.swing.JButton; // Keep explicit imports if used by GEN-BEGIN:initComponents if not using wildcard
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -22,50 +22,81 @@ import java.util.Random;
  */
 public class LoginForm extends javax.swing.JFrame {
 
-    // OTP and logic-related fields - these should be named in the GUI builder if they are visual
+    // OTP and logic-related fields
     private String generatedOtp;
-    // These JComponents (otpLabel, otpField, sendOtpButton, loginButton)
-    // are expected to be declared in the //GEN-BEGIN:variables section by NetBeans
-    // if they are added via the Design view.
-    // If they are NOT in GEN-BEGIN:variables, the GUI builder doesn't know them.
-    // The current instructions imply these variable names *should* be used in the GUI builder.
+
+    // IMPORTANT: For NetBeans GUI Builder Integration:
+    // The following JComponent fields (otpLabel, otpField, sendOtpButton, loginButton)
+    // are intended to be linked to components you create in the NetBeans GUI Designer.
+    // For this linkage to work correctly:
+    // 1. In the NetBeans Design view, add the necessary visual components for OTP:
+    //    - A JLabel to prompt for the OTP (e.g., text "OTP Code:").
+    //    - A JTextField for the user to enter the OTP.
+    //    - A JButton for the user to request an OTP (e.g., text "Send OTP").
+    //    - A JButton for the user to submit their credentials and OTP (e.g., text "Login").
+    //      (If you have an existing main login button, you can repurpose it or rename its variable).
+    // 2. For each of these components, select it in the Design view, go to the
+    //    Properties window, find the "Code" tab (or look for "Variable Name" directly),
+    //    and set the "Variable Name" property EXACTLY as follows:
+    //      - JLabel for OTP prompt:      otpLabel
+    //      - JTextField for OTP input:   otpField
+    //      - JButton for sending OTP:    sendOtpButton
+    //      - JButton for final login:    loginButton
+    //
+    // After doing this, NetBeans will automatically declare these variables in the
+    // special `//GEN-BEGIN:variables` block later in this file.
+    // These explicit private declarations here are for code clarity and to ensure
+    // these fields are recognized and accessible throughout the class logic.
+    // The GUI builder-generated code in `initComponents()` will initialize these fields
+    // if (and only if) they are correctly named in the Design view.
+    private javax.swing.JLabel otpLabel;
+    private javax.swing.JTextField otpField;
+    private javax.swing.JButton sendOtpButton;
+    private javax.swing.JButton loginButton;
+
 
     public LoginForm() {
-        initComponents(); // This initializes components defined in the .form file / GEN-BEGIN:variables
+        initComponents(); // This initializes all components designed in the .form file.
 
-        // Wire action listeners and set initial states for OTP components
-        // Assumes 'sendOtpButton' and 'loginButton' are the 'Name' properties (variable names)
-        // set in the NetBeans GUI Designer for the respective JButtons.
-        // Similar for otpLabel and otpField.
+        // --- OTP Component Setup (Post-initComponents) ---
+        // The following code configures the OTP components by setting their text (if not set in designer)
+        // and adding action listeners. It relies on the components being correctly added and named
+        // in the NetBeans GUI Designer as per the instructions above.
+        //
+        // If "CRITICAL ERROR" messages appear in your console when running, it means the
+        // corresponding component was NOT found (i.e., it was 'null' when this code executed)
+        // likely because its "Variable Name" in the Design view does not match the expected name.
 
         if (this.sendOtpButton != null) {
-            this.sendOtpButton.setText("Send OTP"); // Or set in designer
+            this.sendOtpButton.setText("Send OTP"); // Text can also be set in the designer's properties
             this.sendOtpButton.addActionListener(evt -> sendOtpButtonActionPerformed(evt));
-            this.sendOtpButton.setEnabled(true); // Initially enabled
+            this.sendOtpButton.setEnabled(true); // Send OTP button is initially enabled
         } else {
-            System.err.println("LoginForm: sendOtpButton is null. Check variable name in GUI Designer.");
+            System.err.println("CRITICAL ERROR: LoginForm - 'sendOtpButton' was not initialized by NetBeans. " +
+                               "Please ensure a JButton with the variable name 'sendOtpButton' exists in your form design.");
         }
 
         if (this.loginButton != null) {
-            this.loginButton.setText("Login"); // Or set in designer
+            this.loginButton.setText("Login"); // Text can also be set in the designer's properties
             this.loginButton.addActionListener(evt -> signInActionPerformed(evt));
-            this.loginButton.setEnabled(false); // Initially disabled
+            this.loginButton.setEnabled(false); // Login button is initially disabled until OTP is sent
         } else {
-            System.err.println("LoginForm: loginButton is null. Check variable name in GUI Designer.");
-            // If there's an existing login button from the original design (e.g., signInButton),
-            // it would need to be assigned to this.loginButton or its listener handled separately.
+            System.err.println("CRITICAL ERROR: LoginForm - 'loginButton' was not initialized by NetBeans. " +
+                               "Ensure your main login JButton has the variable name 'loginButton' in your form design.");
         }
 
         if (this.otpLabel != null) {
-             this.otpLabel.setText("OTP Code:"); // Or set in designer
+             this.otpLabel.setText("OTP Code:"); // Text can also be set in the designer's properties
         } else {
-            System.err.println("LoginForm: otpLabel is null. Check variable name in GUI Designer.");
+            System.err.println("CRITICAL ERROR: LoginForm - 'otpLabel' was not initialized by NetBeans. " +
+                               "Ensure a JLabel with the variable name 'otpLabel' exists in your form design.");
         }
 
         if (this.otpField != null) {
-            this.otpField.setEnabled(false); // Initially disabled
+            this.otpField.setEnabled(false); // OTP input field is initially disabled
         } else {
-            System.err.println("LoginForm: otpField is null. Check variable name in GUI Designer.");
+            System.err.println("CRITICAL ERROR: LoginForm - 'otpField' was not initialized by NetBeans. " +
+                               "Ensure a JTextField with the variable name 'otpField' exists in your form design.");
         }
     }
 
@@ -88,12 +119,10 @@ public class LoginForm extends javax.swing.JFrame {
         jLabel8 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
         passwordTxt = new javax.swing.JPasswordField();
-        // Manual instantiation of otpLabel, otpField, sendOtpButton, loginButton
-        // and their setup (setText, addActionListener) are REMOVED from here.
-        // These components, if part of the visual design, will be instantiated by
-        // the code automatically generated by the NetBeans GUI builder within this method.
-        // Their variable names (otpLabel, otpField, sendOtpButton, loginButton)
-        // must match the "Name" property set in the GUI Designer.
+        // Note: The declarations for otpLabel, otpField, sendOtpButton, loginButton
+        // will be automatically generated here by NetBeans if they are added to the form
+        // in the Design view and their "Variable Name" properties are set to match the
+        // private fields declared at the top of this class.
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
@@ -166,18 +195,6 @@ public class LoginForm extends javax.swing.JFrame {
 
         javax.swing.GroupLayout BodyLayout = new javax.swing.GroupLayout(Body);
         Body.setLayout(BodyLayout);
-
-        // The GroupLayout code generated by NetBeans for existing components
-        // (Body, left, jLabel1, username, lms_icon, jLabel2, jLabel3, jLabel8, jLabel7, passwordTxt)
-        // and FOR THE NEW OTP COMPONENTS (otpLabel, otpField, sendOtpButton, loginButton)
-        // should be here, managed by the GUI builder.
-        // All manual setup for otpLabel, otpField, sendOtpButton, loginButton that was here
-        // (setText, addActionListener) is moved to the constructor after initComponents().
-
-        // Keeping the existing GroupLayout for reference, but the GUI builder will own this section.
-        // The developer MUST use the GUI builder to add and position new components.
-        // The following is the original layout from the file for other components.
-        // If otpLabel etc. are added to the form, their layout code will be auto-generated here.
          BodyLayout.setHorizontalGroup(
             BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(BodyLayout.createSequentialGroup()
@@ -205,11 +222,10 @@ public class LoginForm extends javax.swing.JFrame {
                                 .addGap(0, 0, 0)
                                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGap(74, 74, 74))
-                    // Developer: Add sendOtpButton, otpLabel, otpField, loginButton to this GroupLayout using NetBeans GUI Builder
-                    // For example (conceptual, not actual code to insert here):
-                    // .addComponent(sendOtpButton, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    // .addGroup(BodyLayout.createSequentialGroup().addComponent(otpLabel).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(otpField))
-                    // .addComponent(loginButton, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    // DEVELOPER NOTE: Add OTP components (JLabel, JTextField, 2 JButtons)
+                    // to this GroupLayout using the NetBeans GUI Builder.
+                    // Ensure their "Variable Name" properties are set to:
+                    // otpLabel, otpField, sendOtpButton, loginButton
                 )
         );
         BodyLayout.setVerticalGroup(
@@ -221,25 +237,17 @@ public class LoginForm extends javax.swing.JFrame {
                     .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(11, 11, 11)
                 .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(112, 112, 112) // Existing Y gap
+                .addGap(112, 112, 112)
                 .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(lms_icon, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                     // passwordTxt might be too short in height if not properly handled in layout
                     .addComponent(passwordTxt, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
-                // Developer: Add sendOtpButton, otpLabel, otpField, loginButton to this GroupLayout using NetBeans GUI Builder
-                // For example (conceptual, not actual code to insert here):
-                // .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED) // Space
-                // .addComponent(sendOtpButton)
-                // .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                // .addGroup(BodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE).addComponent(otpLabel).addComponent(otpField))
-                // .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                // .addComponent(loginButton)
-                .addContainerGap(205, Short.MAX_VALUE)) // Adjust remaining space
+                // DEVELOPER NOTE: Adjust layout to include OTP components here.
+                .addContainerGap(205, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -258,58 +266,45 @@ public class LoginForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void usernameFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_usernameFocusGained
-        // TODO add your handling code here:
         if(username.getText().equals("Username")) {
             username.setText("");
         }
-        // Removed incorrect passwordTxt.setEchoChar((char) 0) from here.
     }//GEN-LAST:event_usernameFocusGained
 
     private void usernameFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_usernameFocusLost
-        // TODO add your handling code here:
         if(username.getText().equals("")) {
             username.setText("Username");
         }
-        // Removed: if (passwordTxt.getText().equals("Password")) { passwordTxt.setEchoChar((char) 0); }
-        // This logic is not needed here and was incorrect for lost focus.
-        // Placeholder text for password should be handled in passwordFocusLost.
     }//GEN-LAST:event_usernameFocusLost
 
     private void usernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_usernameActionPerformed
-        // Pressing enter in username field might try to submit early.
-        // For OTP flow, this should ideally not trigger immediate login.
-        // Or, it could trigger the "Send OTP" action if username is filled.
-        // For now, let's prevent it from calling signInActionPerformed directly.
-        // sendOtpButtonActionPerformed(evt); // Alternative: try to send OTP
+        // Pressing enter in username field might try to send OTP or do nothing.
+        // For this flow, it's better to rely on explicit button clicks.
     }//GEN-LAST:event_usernameActionPerformed
 
     private void passwordFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_passwordFocusGained
-        // Use String.valueOf to get text from JPasswordField
         if (String.valueOf(passwordTxt.getPassword()).equals("Password")){
             passwordTxt.setText("");
             passwordTxt.setEchoChar('•');
-        }   // TODO add your handling code here:
+        }
     }//GEN-LAST:event_passwordFocusGained
 
     private void passwordFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_passwordFocusLost
         if (String.valueOf(passwordTxt.getPassword()).equals("") ){
             passwordTxt.setText("Password");
-            passwordTxt.setEchoChar((char)0); // Show "Password" placeholder text
+            passwordTxt.setEchoChar((char)0);
         }
     }//GEN-LAST:event_passwordFocusLost
 
     private void passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordActionPerformed
         // Pressing enter in password field should not trigger login before OTP.
-        // signInActionPerformed(evt); // Remove this direct call
     }//GEN-LAST:event_passwordActionPerformed
 
     private void jLabel8MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel8MouseClicked
-
         this.setState(JFrame.ICONIFIED);
     }//GEN-LAST:event_jLabel8MouseClicked
 
     private void jLabel7MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel7MouseClicked
-     //exit
         System.exit(0);
     }//GEN-LAST:event_jLabel7MouseClicked
 
@@ -325,7 +320,7 @@ public class LoginForm extends javax.swing.JFrame {
 
         if (otpField != null) otpField.setEnabled(true);
         if (loginButton != null) loginButton.setEnabled(true);
-        if (sendOtpButton != null) sendOtpButton.setEnabled(false); // Disable after sending
+        if (sendOtpButton != null) sendOtpButton.setEnabled(false);
     }
 
     private void signInActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_signInActionPerformed
@@ -353,19 +348,10 @@ public class LoginForm extends javax.swing.JFrame {
                 if (user.equals("admin")) {
                     role = "admin";
                 } else {
-                    // Password check can be added here if needed for non-admin users,
-                    // or other validation before setting the session.
-                    // For now, any non-admin username logs in as "user" with correct OTP.
                     role = "user";
                 }
 
-                // Set dummy accountId based on role
-                int accountIdToSet = 0; // Default for admin or if other logic fails
-                if (role.equals("admin")) {
-                    accountIdToSet = 0; // Or -1, or a specific admin user ID if applicable
-                } else {
-                    accountIdToSet = 1; // Dummy member ID for regular user
-                }
+                int accountIdToSet = role.equals("admin") ? 0 : 1; // Dummy IDs
                 UserSession.getInstance().setUser(user, role, accountIdToSet);
 
                 if (role.equals("admin")) {
@@ -375,9 +361,9 @@ public class LoginForm extends javax.swing.JFrame {
                 }
                 this.dispose();
 
-            } catch (Exception e) { // Catching generic Exception
+            } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Login failed after OTP: " + e.getMessage(), "Login Error", JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace(); // For debugging
+                e.printStackTrace();
             }
         } else {
             JOptionPane.showMessageDialog(this, "Invalid OTP. Please try again.", "Login Error", JOptionPane.ERROR_MESSAGE);
@@ -386,18 +372,9 @@ public class LoginForm extends javax.swing.JFrame {
 
     private void passwordTxtActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordTxtActionPerformed
         // Pressing enter in password field should not trigger login before OTP.
-        // signInActionPerformed(evt); // Remove this direct call
     }//GEN-LAST:event_passwordTxtActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -405,18 +382,10 @@ public class LoginForm extends javax.swing.JFrame {
                     break;
                 }
             }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
 
-        /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new LoginForm().setVisible(true);
@@ -433,12 +402,17 @@ public class LoginForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel left;
     private javax.swing.JLabel lms_icon;
-    // These are expected to be declared by NetBeans GUI builder if added to the form design:
-    // They are still declared at class level for logic, but GUI builder owns their instantiation if visual.
-    // private javax.swing.JButton loginButton;
-    // private javax.swing.JTextField otpField;
-    // private javax.swing.JLabel otpLabel;
-    // private javax.swing.JButton sendOtpButton;
+    // IMPORTANT FOR NETBEANS GUI BUILDER:
+    // If you add the OTP components (JLabel, JTextField, two JButtons) to your form
+    // using the Design view, and set their "Variable Name" properties in the designer to:
+    //   otpLabel, otpField, sendOtpButton, loginButton
+    // then NetBeans will automatically declare them here. For example:
+    //    private javax.swing.JLabel otpLabel;
+    //    private javax.swing.JTextField otpField;
+    //    private javax.swing.JButton sendOtpButton;
+    //    private javax.swing.JButton loginButton;
+    // The explicit private member declarations at the top of this class are for code clarity
+    // and ensure these variables are accessible. The GUI builder initializes them.
     private javax.swing.JPasswordField passwordTxt;
     private javax.swing.JTextField username;
     // End of variables declaration//GEN-END:variables
