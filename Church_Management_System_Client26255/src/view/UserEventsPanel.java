@@ -23,6 +23,12 @@ public class UserEventsPanel extends JPanel {
     private JButton btnRefreshEvents;
     private EventService eventService;
 
+    // Search components
+    private JTextField txtSearchEventName;
+    private JButton btnSearchUserEvents;
+    private JButton btnClearUserEventSearch;
+    private TableRowSorter<DefaultTableModel> sorter;
+
     private final SimpleDateFormat dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public UserEventsPanel() {
@@ -47,53 +53,99 @@ public class UserEventsPanel extends JPanel {
                         "Event records cannot be loaded.",
                         "Service Connection Error", JOptionPane.ERROR_MESSAGE);
             });
-            disableRefreshButton();
+            updateComponentStates(false); // Disable all controls if service fails
         }
-        loadUpcomingEvents();
+        loadUpcomingEvents(); // Initial load
     }
 
-    private void disableRefreshButton() {
-        if (btnRefreshEvents != null) {
-            btnRefreshEvents.setEnabled(false);
-        }
+    private void updateComponentStates(boolean enable) {
+        if (btnRefreshEvents != null) btnRefreshEvents.setEnabled(enable);
+        if (txtSearchEventName != null) txtSearchEventName.setEnabled(enable);
+        if (btnSearchUserEvents != null) btnSearchUserEvents.setEnabled(enable);
+        if (btnClearUserEventSearch != null) btnClearUserEventSearch.setEnabled(enable);
     }
 
     private void initComponents() {
-        // Table Setup
-        String[] columnNames = {"Name", "Date/Time", "Location", "Description"};
+        // --- Search Panel (NORTH) ---
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(0,0,5,0)); // Bottom padding for search panel
+
+        txtSearchEventName = new JTextField(25);
+        btnSearchUserEvents = new JButton("Search Events");
+        btnClearUserEventSearch = new JButton("Clear Search / Show All");
+
+        searchPanel.add(new JLabel("Search by Name:"));
+        searchPanel.add(txtSearchEventName);
+        searchPanel.add(btnSearchUserEvents);
+        searchPanel.add(btnClearUserEventSearch);
+        add(searchPanel, BorderLayout.NORTH);
+
+        // --- Table Setup (CENTER) ---
+        String[] columnNames = {"Name", "Date/Time", "Location", "Description"}; // Name is at index 0
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Make cells non-editable
+                return false;
             }
         };
         eventsTable = new JTable(tableModel);
         eventsTable.setFillsViewportHeight(true);
         eventsTable.setRowHeight(25);
+
+        sorter = new TableRowSorter<>(tableModel);
+        eventsTable.setRowSorter(sorter);
+
         JScrollPane scrollPane = new JScrollPane(eventsTable);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Button Panel (South)
+        // --- Button Panel (SOUTH) ---
+        // Re-using btnRefreshEvents. Its text could be "Refresh / Show All"
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(5,0,0,0));
-        btnRefreshEvents = new JButton("Refresh Upcoming Events");
+        btnRefreshEvents = new JButton("Refresh Events from Server");
         btnRefreshEvents.setFont(new Font("Arial", Font.PLAIN, 12));
         buttonPanel.add(btnRefreshEvents);
         add(buttonPanel, BorderLayout.SOUTH);
 
         // Action Listeners
-        btnRefreshEvents.addActionListener(e -> loadUpcomingEvents());
+        btnSearchUserEvents.addActionListener(e -> filterUserEventsAction());
+        btnClearUserEventSearch.addActionListener(e -> clearUserEventFilterAction());
+        btnRefreshEvents.addActionListener(e -> {
+            clearUserEventFilterAction(); // Clear filter before loading all
+            loadUpcomingEvents();
+        });
+    }
+
+    private void filterUserEventsAction() {
+        String searchTerm = txtSearchEventName.getText().trim();
+        if (searchTerm.isEmpty()) {
+            clearUserEventFilterAction();
+        } else {
+            // (?i) for case-insensitive. Pattern.quote to treat searchTerm literally.
+            // Assuming "Name" is the first column (index 0)
+            RowFilter<DefaultTableModel, Object> eventNameFilter = RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(searchTerm), 0);
+            sorter.setRowFilter(eventNameFilter);
+        }
+    }
+
+    private void clearUserEventFilterAction() {
+        txtSearchEventName.setText("");
+        if (sorter != null) {
+            sorter.setRowFilter(null);
+        }
     }
 
     private void loadUpcomingEvents() {
         if (eventService == null) {
             tableModel.setRowCount(0);
-            disableRefreshButton();
-            // Optionally, show a message in the table area or a status bar
+            updateComponentStates(false);
             return;
         }
-        if (btnRefreshEvents != null) btnRefreshEvents.setEnabled(false); // Disable while loading
-        tableModel.setRowCount(0); // Clear table
+        updateComponentStates(false); // Disable controls during load
+        // Ensure filter is cleared when refreshing from server
+        if (sorter != null) sorter.setRowFilter(null);
+        if (txtSearchEventName != null) txtSearchEventName.setText("");
+
 
         SwingWorker<List<Event>, Void> worker = new SwingWorker<List<Event>, Void>() {
             private String errorMessage = null;
@@ -103,32 +155,34 @@ public class UserEventsPanel extends JPanel {
                 try {
                     List<Event> allEvents = eventService.retreiveAll();
                     if (allEvents == null) {
-                        return List.of(); // Return empty list if service returns null
+                        return List.of();
                     }
-                    // Filter for upcoming events
-                    Date currentTime = new Date(); // Current time
+                    Date currentTime = new Date();
                     return allEvents.stream()
                         .filter(event -> event.getEventDateTime() != null && event.getEventDateTime().after(currentTime))
                         .collect(Collectors.toList());
                 } catch (RemoteException e) {
                     e.printStackTrace();
                     errorMessage = "Error communicating with the server: " + e.getMessage();
-                    return List.of(); // Return empty list on error
+                    return List.of();
                 }
             }
 
             @Override
             protected void done() {
-                if (btnRefreshEvents != null) btnRefreshEvents.setEnabled(true); // Re-enable after loading attempt
+                updateComponentStates(true); // Re-enable controls
+                tableModel.setRowCount(0); // Clear table before populating with fresh data
 
                 if (errorMessage != null) {
                     JOptionPane.showMessageDialog(UserEventsPanel.this, errorMessage, "RemoteException", JOptionPane.ERROR_MESSAGE);
-                    disableRefreshButton(); // Keep it disabled if error occurred
+                    // updateComponentStates(false) was already called before worker.execute()
+                    // if an error occurs, we might want to keep controls disabled, or enable refresh.
+                    // For now, updateComponentStates(true) is called, allowing retry.
                     return;
                 }
 
                 try {
-                    List<Event> upcomingEvents = get(); // Get result from doInBackground
+                    List<Event> upcomingEvents = get();
                     if (upcomingEvents != null) {
                         for (Event event : upcomingEvents) {
                             tableModel.addRow(new Object[]{
@@ -139,7 +193,9 @@ public class UserEventsPanel extends JPanel {
                             });
                         }
                     }
-                } catch (Exception e) { // Catch exceptions from get() like InterruptedException, ExecutionException
+                    // No need to re-apply filter here, as loadUpcomingEvents implies showing all (upcoming)
+                    // and clearing the filter.
+                } catch (Exception e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(UserEventsPanel.this, "Error processing events: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }

@@ -11,64 +11,80 @@ import util.HibernateUtil; // Corrected import assuming HibernateUtil is in util
 
 public class MemberDao{
    
-    public String registerMember(Member member){
-        try{
-            //1. Create a Session
-            Session ss= HibernateUtil.getSessionFactory().openSession();
-            //2.Create a transaction
-            Transaction tr= ss.beginTransaction();
-            ss.save(member);
-            tr.commit();
-            ss.close();
-            return "Data saved succesfully";
-        }catch(Exception ex){
+    public String registerMember(Member member) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.save(member);
+            transaction.commit();
+            return "Data saved successfully";
+        } catch (Exception ex) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
             ex.printStackTrace();
+            return "Error saving member: " + ex.getMessage();
         }
-        return null;
     }
-     public String updateMember(Member member){
-        try{
-            //1. Create a Session
-            Session ss= HibernateUtil.getSessionFactory().openSession();
-            //2.Create a transaction
-            Transaction tr= ss.beginTransaction();
-            ss.save(member);
-            tr.commit();
-            ss.close();
-            return "Data updated succesfully";
-        }catch(Exception ex){
+
+    public String updateMember(Member member) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.update(member); // Corrected to session.update()
+            transaction.commit();
+            return "Data updated successfully";
+        } catch (Exception ex) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
             ex.printStackTrace();
+            return "Error updating member: " + ex.getMessage();
         }
-        return null;
     }
-     public String deleteMember(Member member){
-        try{
-            //1. Create a Session
-            Session ss= HibernateUtil.getSessionFactory().openSession();
-            //2.Create a transaction
-            Transaction tr= ss.beginTransaction();
-            ss.save(member);
-            tr.commit();
-            ss.close();
-            return "Data deleted succesfully";
-        }catch(Exception ex){
+
+    public String deleteMember(int memberId) { // Changed parameter to int
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Member memberToDelete = session.get(Member.class, memberId);
+            if (memberToDelete != null) {
+                session.delete(memberToDelete); // Corrected to session.delete()
+                transaction.commit();
+                return "Data deleted successfully";
+            } else {
+                if (transaction != null && transaction.isActive()) {
+                    transaction.rollback();
+                }
+                return "Member not found with ID: " + memberId;
+            }
+        } catch (Exception ex) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
             ex.printStackTrace();
+            return "Error deleting member: " + ex.getMessage();
         }
-        return null;
     }
      
-      public List<Member> retreiveAll(){
-        Session ss= HibernateUtil.getSessionFactory().openSession();
-        // Corrected HQL query
-        List<Member> memberList=ss.createQuery("FROM Member mem", Member.class).list();
-        ss.close();
-        return memberList;
+    public List<Member> retreiveAll() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Corrected HQL query and using try-with-resources
+            Query<Member> query = session.createQuery("FROM Member mem", Member.class);
+            return query.list();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>(); // Return empty list on error
+        }
     }
-    public Member retrieveById(Member member){ // Consider changing parameter to int memberId
-        Session ss= HibernateUtil.getSessionFactory().openSession();
-        Member members=(Member)ss.get(Member.class,member.getMemberId());
-        ss.close();
-        return members;
+
+    public Member retrieveById(int memberId) { // Changed parameter to int
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(Member.class, memberId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Return null on error or if not found
+        }
     }
 
     public List<Member> searchMembersByName(String name) {

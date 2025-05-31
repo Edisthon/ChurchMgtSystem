@@ -23,6 +23,11 @@ public class MembersPanel extends JPanel {
     private JButton btnAddMember, btnEditMember, btnDeleteMember, btnRefreshMembers;
     private MemberService memberService;
 
+    // Search components
+    private JTextField txtSearchMemberName;
+    private JButton btnSearchMember;
+    private JButton btnShowAllMembers;
+
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
     public MembersPanel() {
@@ -55,9 +60,25 @@ public class MembersPanel extends JPanel {
         btnAddMember.setEnabled(false);
         btnEditMember.setEnabled(false);
         btnDeleteMember.setEnabled(false);
+        // btnRefreshMembers can also be considered part of CRUD enablement
+        if(btnRefreshMembers != null) btnRefreshMembers.setEnabled(false);
+        if(btnSearchMember != null) btnSearchMember.setEnabled(false);
+        if(btnShowAllMembers != null) btnShowAllMembers.setEnabled(false);
     }
 
     private void initComponents() {
+        // Search Panel (North)
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        txtSearchMemberName = new JTextField(25); // Increased size
+        btnSearchMember = new JButton("Search by Name");
+        btnShowAllMembers = new JButton("Show All Members");
+
+        searchPanel.add(new JLabel("Search:"));
+        searchPanel.add(txtSearchMemberName);
+        searchPanel.add(btnSearchMember);
+        searchPanel.add(btnShowAllMembers);
+        add(searchPanel, BorderLayout.NORTH);
+
         // Table Setup
         String[] columnNames = {"ID", "Full Name", "Gender", "Phone", "Birthdate", "Group ID"};
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -98,35 +119,126 @@ public class MembersPanel extends JPanel {
             if (!btnDeleteMember.isEnabled()) return;
             deleteSelectedMember();
         });
-        btnRefreshMembers.addActionListener(e -> loadMembers());
+        btnRefreshMembers.addActionListener(e -> loadMembers()); // Refresh still loads all
+        btnSearchMember.addActionListener(e -> searchMembersAction());
+        btnShowAllMembers.addActionListener(e -> loadMembers()); // Show All also loads all
+    }
+
+    private void populateTableWithMembers(List<Member> members) {
+        tableModel.setRowCount(0);
+        if (members != null) {
+            for (Member member : members) {
+                tableModel.addRow(new Object[]{
+                    member.getMemberId(),
+                    member.getFullName(),
+                    member.getGender(),
+                    member.getPhoneNumber(),
+                    (member.getBirthdate() != null) ? dateFormatter.format(member.getBirthdate()) : null,
+                    member.getGroupId()
+                });
+            }
+        }
     }
 
     private void loadMembers() {
         if (memberService == null) {
             tableModel.setRowCount(0);
+            disableCrudButtons(); // Ensure all relevant buttons are disabled
+            // Initial error message shown in constructor
             return;
         }
-        try {
-            List<Member> members = memberService.retreiveAll();
-            tableModel.setRowCount(0);
-            if (members != null) {
-                for (Member member : members) {
-                    tableModel.addRow(new Object[]{
-                        member.getMemberId(),
-                        member.getFullName(),
-                        member.getGender(),
-                        member.getPhoneNumber(),
-                        (member.getBirthdate() != null) ? dateFormatter.format(member.getBirthdate()) : null,
-                        member.getGroupId() // Assuming getGroupId() returns an Integer or int
-                    });
+
+        btnRefreshMembers.setEnabled(false); // Disable during load
+        btnSearchMember.setEnabled(false);
+        btnShowAllMembers.setEnabled(false);
+
+        SwingWorker<List<Member>, Void> worker = new SwingWorker<List<Member>, Void>() {
+            private String errorMessage = null;
+            @Override
+            protected List<Member> doInBackground() throws Exception {
+                try {
+                    return memberService.retreiveAll();
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                    errorMessage = "Error loading members: " + e.getMessage();
+                    return null;
                 }
             }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            tableModel.setRowCount(0);
-            JOptionPane.showMessageDialog(this, "Error loading members: " + e.getMessage(), "RemoteException", JOptionPane.ERROR_MESSAGE);
-            disableCrudButtons();
+
+            @Override
+            protected void done() {
+                btnRefreshMembers.setEnabled(true);
+                btnSearchMember.setEnabled(true);
+                btnShowAllMembers.setEnabled(true);
+                if (errorMessage != null) {
+                    JOptionPane.showMessageDialog(MembersPanel.this, errorMessage, "RemoteException", JOptionPane.ERROR_MESSAGE);
+                    disableCrudButtons(); // Re-disable if error
+                } else {
+                    try {
+                        List<Member> members = get();
+                        populateTableWithMembers(members);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(MembersPanel.this, "Error processing members list: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void searchMembersAction() {
+        if (memberService == null) {
+            JOptionPane.showMessageDialog(this, "Member Service not available.", "Service Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
+        String searchTerm = txtSearchMemberName.getText().trim();
+        if (searchTerm.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a name to search.", "Search Error", JOptionPane.WARNING_MESSAGE);
+            loadMembers(); // Or just return / clear table
+            return;
+        }
+
+        btnSearchMember.setEnabled(false);
+        btnRefreshMembers.setEnabled(false); // Disable other buttons during search
+        btnShowAllMembers.setEnabled(false);
+
+
+        SwingWorker<List<Member>, Void> worker = new SwingWorker<List<Member>, Void>() {
+            private String errorMessage = null;
+            @Override
+            protected List<Member> doInBackground() throws Exception {
+                try {
+                    return memberService.searchMembersByName(searchTerm);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                    errorMessage = "Error searching members: " + e.getMessage();
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                btnSearchMember.setEnabled(true);
+                btnRefreshMembers.setEnabled(true);
+                btnShowAllMembers.setEnabled(true);
+                if (errorMessage != null) {
+                    JOptionPane.showMessageDialog(MembersPanel.this, errorMessage, "Search Exception", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    try {
+                        List<Member> members = get();
+                        populateTableWithMembers(members);
+                        if (members == null || members.isEmpty()) {
+                            JOptionPane.showMessageDialog(MembersPanel.this, "No members found matching '" + searchTerm + "'.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(MembersPanel.this, "Error processing search results: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void openMemberDialog(Member memberToEdit) {
