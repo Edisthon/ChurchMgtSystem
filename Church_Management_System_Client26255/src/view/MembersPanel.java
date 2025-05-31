@@ -459,7 +459,8 @@ public class MembersPanel extends JPanel {
                     return;
                 }
                 try {
-                    String result = memberService.deleteMember(selectedMember);
+                    int memberId=0;
+                    String result = memberService.deleteMember(memberId);
                     JOptionPane.showMessageDialog(this, "Member '" + selectedMember.getFullName() + "' deleted: " + result, "Member Deleted", JOptionPane.INFORMATION_MESSAGE);
                     loadMembers();
                 } catch (RemoteException ex) {
