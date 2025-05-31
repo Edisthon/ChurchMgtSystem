@@ -37,8 +37,8 @@ public class MemberImpl extends UnicastRemoteObject implements MemberService {
     }
 
     @Override
-    public String deleteMember(int memberID) throws RemoteException {
-        return memberDao.deleteMember(memberID);
+    public String deleteMember(Member members) throws RemoteException {
+        return memberDao.deleteMember(members);
     }
 
     @Override
@@ -47,8 +47,8 @@ public class MemberImpl extends UnicastRemoteObject implements MemberService {
     }
 
     @Override
-    public Member retrieveById(int memberID) throws RemoteException {
-        return memberDao.retrieveById(memberID);
+    public Member retrieveById(Member member) throws RemoteException {
+        return memberDao.retrieveById(member);
     }
 
     @Override

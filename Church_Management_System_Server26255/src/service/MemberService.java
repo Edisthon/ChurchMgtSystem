@@ -13,9 +13,9 @@ import java.sql.Timestamp;
 public interface MemberService extends Remote { // Ensure it extends Remote
    public String  registerMember(Member member) throws RemoteException;
     public  String  updateMember(Member member) throws RemoteException;
-    public  String  deleteMember(int memberID) throws RemoteException; // Consider taking int memberId instead of Member object
+    public  String  deleteMember(Member member) throws RemoteException; // Consider taking int memberId instead of Member object
     public List<Member> retreiveAll() throws RemoteException;
-    public Member retrieveById(int memberID) throws RemoteException; // This seems like an older/alternative version
+    public Member retrieveById(Member accounts) throws RemoteException; // This seems like an older/alternative version
     public Member getMemberById(int memberId) throws RemoteException; // Standard way by ID
 
     List<Member> searchMembersByName(String name) throws RemoteException; // Added method

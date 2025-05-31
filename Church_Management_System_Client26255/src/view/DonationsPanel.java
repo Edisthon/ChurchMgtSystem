@@ -25,6 +25,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+
 public class DonationsPanel extends JPanel {
 
     private JTable donationsTable;
@@ -330,86 +331,148 @@ public class DonationsPanel extends JPanel {
         };
         worker.execute();
     }
-    private void exportDonationsToPdf() {
-    if (tableModel.getRowCount() == 0) {
-        JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
-        return;
+
+    private float drawPdfTableHeaders(PDPageContentStream contentStream, PDType1Font font, float fontSize,
+                                     float yPosition, float margin, float[] columnWidths,
+                                     DefaultTableModel currentTableModel, float lineHeight) throws IOException {
+        contentStream.setFont(font, fontSize);
+        float currentX = margin;
+        for (int i = 0; i < currentTableModel.getColumnCount(); i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(currentX, yPosition);
+            contentStream.showText(currentTableModel.getColumnName(i));
+            contentStream.endText();
+            currentX += columnWidths[i];
+        }
+        return yPosition - (lineHeight * 1.5f); // Return new Y position after headers & spacing
     }
 
-    JFileChooser fileChooser = new JFileChooser();
-    fileChooser.setDialogTitle("Save Donation Report PDF");
-    fileChooser.setSelectedFile(new File("DonationReport.pdf"));
-    javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("PDF Documents", "pdf");
-    fileChooser.setFileFilter(filter);
-
-    int userSelection = fileChooser.showSaveDialog(this);
-
-    if (userSelection == JFileChooser.APPROVE_OPTION) {
-        File fileToSave = fileChooser.getSelectedFile();
-        if (!fileToSave.getAbsolutePath().toLowerCase().endsWith(".pdf")) {
-            fileToSave = new File(fileToSave.getAbsolutePath() + ".pdf");
+    private void exportDonationsToPdf() {
+        if (tableModel.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No data to export.", "Export Error", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
-        if (fileToSave.exists()) {
-            int response = JOptionPane.showConfirmDialog(this,
-                            "The file already exists. Do you want to overwrite it?",
-                            "Confirm Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (response != JOptionPane.YES_OPTION) {
-                return;
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Donation Report PDF");
+        fileChooser.setSelectedFile(new File("DonationReport.pdf"));
+        javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("PDF Documents", "pdf");
+        fileChooser.setFileFilter(filter);
+
+        int userSelection = fileChooser.showSaveDialog(this);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            if (!fileToSave.getAbsolutePath().toLowerCase().endsWith(".pdf")) {
+                fileToSave = new File(fileToSave.getAbsolutePath() + ".pdf");
             }
-        }
+
+            if (fileToSave.exists()) {
+                int response = JOptionPane.showConfirmDialog(this,
+                                "The file already exists. Do you want to overwrite it?",
+                                "Confirm Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (response != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+
+            try (PDDocument document = new PDDocument()) {
+                PDPage page = new PDPage();
+                document.addPage(page);
+
+                float margin = 40;
+                float yStart = page.getMediaBox().getHeight() - margin;
+                float tableTop = yStart - 25;
+                float yPosition = tableTop;
+                float bottomMargin = 60;
+                float lineHeight = 14f;
+                float[] columnWidths = {30, 130, 80, 110, 60, 120};
+                int rowsPerPage = (int) ((tableTop - bottomMargin - (lineHeight * 2)) / lineHeight) ;
+
+                PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+                PDType1Font titleFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font headerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font dataFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                PDType1Font summaryFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
 
+                contentStream.setFont(titleFont, 18);
                 contentStream.beginText();
-                contentStream.newLineAtOffset(x, yPosition);
-                contentStream.showText(tableModel.getColumnName(i));
+                contentStream.newLineAtOffset(margin, yStart);
+                contentStream.showText("Donation Report");
                 contentStream.endText();
-                x += columnWidths[i];
-            }
-            yPosition -= lineHeight * 1.5f;
+                yPosition -= 30;
 
+                float headerFontSize = 10f;
+                yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
 
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(x, yPosition);
-                        contentStream.showText(tableModel.getColumnName(i));
-                        contentStream.endText();
-                        x += columnWidths[i];
+                float dataFontSize = 9f;
+                contentStream.setFont(dataFont, dataFontSize);
+                int rowsWrittenOnPage = 0;
+
+                for (int row = 0; row < tableModel.getRowCount(); row++) {
+                    if (rowsWrittenOnPage >= rowsPerPage && row < tableModel.getRowCount() -1 ) {
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        contentStream = new PDPageContentStream(document, page);
+                        yPosition = page.getMediaBox().getHeight() - margin - 20;
+                        yPosition = drawPdfTableHeaders(contentStream, headerFont, headerFontSize, yPosition, margin, columnWidths, tableModel, lineHeight);
+                        contentStream.setFont(dataFont, dataFontSize);
+                        rowsWrittenOnPage = 0;
                     }
-                    yPosition -= lineHeight * 1.5f;
-                    contentStream.setFont(PDType1Font.HELVETICA, 9);
-                    rowsWrittenOnPage = 0;
+
+                    float currentX = margin;
+                    for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                        Object cellValue = tableModel.getValueAt(row, col);
+                        String text = (cellValue != null) ? cellValue.toString() : "";
+
+                        float colWidth = columnWidths[col] - 2;
+                        // Use the specific font for width calculation
+                        float textWidth = dataFont.getStringWidth(text) / 1000 * dataFontSize;
+                        if (textWidth > colWidth) {
+                            StringBuilder sb = new StringBuilder();
+                            for (char c : text.toCharArray()) {
+                                if (dataFont.getStringWidth(sb.toString() + c) / 1000 * dataFontSize < colWidth - (dataFont.getStringWidth("...")/1000 * dataFontSize) ) {
+                                    sb.append(c);
+                                } else { break; }
+                            }
+                            text = sb.toString() + "...";
+                        }
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(currentX, yPosition);
+                        contentStream.showText(text);
+                        contentStream.endText();
+                        currentX += columnWidths[col];
+                    }
+                    yPosition -= lineHeight;
+                    rowsWrittenOnPage++;
                 }
 
+                // Write Summary Total
+                yPosition -= lineHeight * 2;
+                if (yPosition < bottomMargin) {
+                    contentStream.close();
+                    page = new PDPage();
+                    document.addPage(page);
+                    contentStream = new PDPageContentStream(document, page);
+                    yPosition = page.getMediaBox().getHeight() - margin - 20;
+                }
+                contentStream.setFont(summaryFont, 12);
+                contentStream.beginText();
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText(lblTotalDonations.getText());
+                contentStream.endText();
 
-
-            // Write Summary Total
-            yPosition -= lineHeight * 2; // Extra space before total
-            if (yPosition < bottomMargin) { // Check if new page needed for total
                 contentStream.close();
-                page = new PDPage();
-                document.addPage(page);
-                contentStream = new PDPageContentStream(document, page);
-                yPosition = page.getMediaBox().getHeight() - margin - 20;
+                document.save(fileToSave);
+                JOptionPane.showMessageDialog(this, "Donation report exported successfully to:\n" + fileToSave.getAbsolutePath(), "PDF Export Success", JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error exporting to PDF: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
             }
-            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
-            contentStream.beginText();
-            contentStream.newLineAtOffset(margin, yPosition);
-            contentStream.showText(lblTotalDonations.getText()); // Get text from the label
-            contentStream.endText();
-
-            contentStream.close();
-            document.save(fileToSave);
-            JOptionPane.showMessageDialog(this, "Donation report exported successfully to:\n" + fileToSave.getAbsolutePath(), "PDF Export Success", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error exporting to PDF: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-}
-
-
-
-
-
 }
