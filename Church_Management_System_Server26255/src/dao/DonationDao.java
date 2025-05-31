@@ -3,8 +3,8 @@ package dao;
 import model.Donation;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.query.Query; // Import for Hibernate 5+ Query
-import util.HibernateUtil; // Assuming HibernateUtil is in util package
+import org.hibernate.Query; // Import for Hibernate 5+ Query
+
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -13,7 +13,8 @@ public class DonationDao {
 
     public String saveDonation(Donation donation) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try  {
+            Session session = HibernateUtil.getSessionFactory().openSession();
             transaction = session.beginTransaction();
             session.save(donation);
             transaction.commit();
@@ -28,12 +29,15 @@ public class DonationDao {
     }
 
     public Donation getDonationById(int donationId) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try  {
+            Session session = HibernateUtil.getSessionFactory().openSession();
             // Eagerly fetch member to avoid LazyInitializationException if member is accessed after session closes
-            return session.createQuery("FROM Donation d JOIN FETCH d.member WHERE d.donationId = :id", Donation.class)
-                          .setParameter("id", donationId)
-                          .uniqueResultOptional() // Returns Optional<Donation>, good for handling nulls
-                          .orElse(null);
+                Donation donation = (Donation) session.createQuery(
+    "FROM Donation d JOIN FETCH d.member WHERE d.donationId = :id"
+)
+.setParameter("id", donationId)
+.uniqueResult();
+return donation;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -41,9 +45,15 @@ public class DonationDao {
     }
 
     public List<Donation> getAllDonations() {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try{
+            Session session = HibernateUtil.getSessionFactory().openSession();
             // Use HQL (Hibernate Query Language)
-            return session.createQuery("FROM Donation d JOIN FETCH d.member ORDER BY d.donationDate DESC", Donation.class).list();
+            List<Donation> donations = session.createQuery(
+    "FROM Donation d JOIN FETCH d.member ORDER BY d.donationDate DESC"
+).list();
+
+return donations;
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -51,11 +61,16 @@ public class DonationDao {
     }
 
     public List<Donation> getDonationsByMemberId(int memberId) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Donation> query = session.createQuery(
-                "FROM Donation d JOIN FETCH d.member WHERE d.member.memberId = :memberId ORDER BY d.donationDate DESC", Donation.class);
-            query.setParameter("memberId", memberId);
-            return query.list();
+        try{
+            Session session = HibernateUtil.getSessionFactory().openSession();
+            Query query = session.createQuery(
+    "FROM Donation d JOIN FETCH d.member WHERE d.member.memberId = :memberId ORDER BY d.donationDate DESC"
+);
+query.setParameter("memberId", memberId);
+
+List<Donation> donations = query.list(); // cast if needed
+return donations;
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -63,12 +78,17 @@ public class DonationDao {
     }
 
     public List<Donation> getDonationsByDateRange(Timestamp startDate, Timestamp endDate) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Donation> query = session.createQuery(
-                "FROM Donation d JOIN FETCH d.member WHERE d.donationDate BETWEEN :startDate AND :endDate ORDER BY d.donationDate DESC", Donation.class);
-            query.setParameter("startDate", startDate);
-            query.setParameter("endDate", endDate);
-            return query.list();
+        try{
+            Session session = HibernateUtil.getSessionFactory().openSession();
+Query query = session.createQuery(
+    "FROM Donation d JOIN FETCH d.member WHERE d.donationDate BETWEEN :startDate AND :endDate ORDER BY d.donationDate DESC"
+);
+query.setParameter("startDate", startDate);
+query.setParameter("endDate", endDate);
+
+@SuppressWarnings("unchecked")
+List<Donation> donations = (List<Donation>) query.list();
+return donations;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -77,7 +97,8 @@ public class DonationDao {
 
     public String updateDonation(Donation donation) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            Session session = HibernateUtil.getSessionFactory().openSession();
             transaction = session.beginTransaction();
             session.update(donation); // Use update for existing entities
             transaction.commit();
@@ -94,9 +115,10 @@ public class DonationDao {
     public String deleteDonation(int donationId) {
         Transaction transaction = null;
         Donation donationToDelete = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try  {
+            Session session = HibernateUtil.getSessionFactory().openSession();
             transaction = session.beginTransaction();
-            donationToDelete = session.get(Donation.class, donationId); // Fetch first
+            donationToDelete = (Donation) session.get(Donation.class, donationId); // Fetch first
             if (donationToDelete != null) {
                 session.delete(donationToDelete);
                 transaction.commit();

@@ -16,7 +16,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import model.Member;
 
-
+/**
+ *
+ * @author HP
+ */
 public class MemberImpl extends UnicastRemoteObject implements MemberService {
 
     private MemberDao memberDao;
@@ -35,10 +38,7 @@ public class MemberImpl extends UnicastRemoteObject implements MemberService {
         return memberDao.updateMember(members);
     }
 
-    @Override
-    public String deleteMember(Member members) throws RemoteException {
-        return memberDao.deleteMember(members);
-    }
+   
 
     @Override
     public List<Member> retreiveAll() throws RemoteException {
@@ -53,6 +53,11 @@ public class MemberImpl extends UnicastRemoteObject implements MemberService {
     @Override
     public Member getMemberById(int userId) throws RemoteException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String deleteMember(int memberID) throws RemoteException {
+       return memberDao.deleteMember(memberID);
     }
     
     

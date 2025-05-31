@@ -10,7 +10,7 @@ import model.Member;
 public interface MemberService {
    public String  registerMember(Member member) throws RemoteException;
     public  String  updateMember(Member member) throws RemoteException;
-    public  String  deleteMember(Member member) throws RemoteException;
+    public  String  deleteMember(int memberID) throws RemoteException;
     public List<Member> retreiveAll() throws RemoteException;
     public Member retrieveById(Member accounts) throws RemoteException;
     Member getMemberById(int userId) throws RemoteException;
