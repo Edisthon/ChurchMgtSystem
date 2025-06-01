@@ -2,7 +2,8 @@ package model;
 
 import java.sql.Timestamp; // Or java.time.LocalDateTime
 
-public class Accounts {
+public class Accounts implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private int accountId;
     private String username;
     // Password hash should generally not be sent to client, but role might be useful

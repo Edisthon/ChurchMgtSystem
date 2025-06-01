@@ -1,14 +1,14 @@
 package service;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import model.Event;
 import java.util.List;
 import java.sql.Date; // For Member birthdate
 import java.sql.Timestamp; // For Event eventDateTime & EventAttendance checkInTime
-import model.Event;
 import model.Member;
 
-public interface EventService {
+public interface EventService extends java.rmi.Remote {
     public String  registerEvent(Event events) throws RemoteException;
     public  String  updateEvent(Event events) throws RemoteException;
     public  String  deleteEvent(Event events) throws RemoteException;
