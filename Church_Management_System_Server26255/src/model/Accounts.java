@@ -4,7 +4,9 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "accounts") // Assuming table name
-public class Accounts {
+public class Accounts implements java.io.Serializable {
+
+    private static final long serialVersionUID = 1L; // You can use any long value
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
