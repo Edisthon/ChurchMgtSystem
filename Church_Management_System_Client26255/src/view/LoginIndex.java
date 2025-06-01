@@ -128,7 +128,7 @@ public class LoginIndex extends javax.swing.JFrame {
 
     private void jLabel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseClicked
         //Instantiate your login form 
-        LoginForm loginform = new LoginForm ();
+        NewLoginForm loginform = new NewLoginForm (); // Changed to NewLoginForm
                              
          
                                loginform.setVisible(true);
@@ -138,7 +138,7 @@ public class LoginIndex extends javax.swing.JFrame {
     }//GEN-LAST:event_jLabel1MouseClicked
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-       LoginForm login= new LoginForm();
+       NewLoginForm login= new NewLoginForm(); // Changed to NewLoginForm
        login.setVisible(true);
        this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
