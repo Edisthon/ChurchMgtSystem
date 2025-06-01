@@ -98,8 +98,8 @@ public class AccountsServiceImpl extends UnicastRemoteObject implements Accounts
         // This assumes Accounts model has setOtpCode and setOtpExpiryTime methods
         String updateStatus = this.accountsDao.updateOtpForAccount(account.getAccountId(), otpCode, otpExpiryTime);
 
-        if (!dbUpdateStatus.startsWith("OTP details updated successfully")) {
-            return "Error: Could not store OTP details. " + dbUpdateStatus;
+        if (!updateStatus.startsWith("OTP details updated successfully")) {
+            return "Error: Could not store OTP details. " + updateStatus;
         }
 
         // Send email with OTP
@@ -117,11 +117,10 @@ public class AccountsServiceImpl extends UnicastRemoteObject implements Accounts
     }
 
     @Override
-    public Accounts verifyOtpAndLogin(String username, String password, String otp) throws RemoteException {
+    public Accounts verifyOtpAndLogin(String username, String otp) throws RemoteException {
         if (username == null || username.trim().isEmpty() ||
-            password == null || password.isEmpty() ||
             otp == null || otp.trim().isEmpty()) {
-            throw new RemoteException("Username, password, and OTP cannot be empty.");
+            throw new RemoteException("Username and OTP cannot be empty.");
         }
         if (this.accountsDao == null) {
             System.err.println("AccountsServiceImpl.verifyOtpAndLogin: accountsDao is null!");
@@ -132,12 +131,6 @@ public class AccountsServiceImpl extends UnicastRemoteObject implements Accounts
 
         if (account == null) {
             return null; // User not found
-        }
-
-        // Step 1: Verify Password
-        // Assumes account.getPasswordHash() stores the hashed password
-        if (!PasswordUtil.checkPassword(password, account.getPasswordHash())) {
-            return null; // Password mismatch
         }
 
         // Step 2: Verify OTP (existing logic)

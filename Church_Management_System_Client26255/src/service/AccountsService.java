@@ -18,5 +18,5 @@ public interface AccountsService extends Remote { // Extended Remote
     // Member getMemberById(int userId) throws RemoteException; // Removed
 
     String requestOtp(String username) throws RemoteException;
-    model.Accounts verifyOtpAndLogin(String username, String password, String otp) throws RemoteException;
+    model.Accounts verifyOtpAndLogin(String username, String otp) throws RemoteException;
 }

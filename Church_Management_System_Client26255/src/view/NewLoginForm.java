@@ -14,7 +14,6 @@ import util.UserSession;
 public class NewLoginForm extends JFrame {
 
     private JTextField usernameField;
-    private JPasswordField passwordField;
     private JTextField otpField;
     private JButton sendOtpButton;
     private JButton loginButton;
@@ -74,15 +73,8 @@ public class NewLoginForm extends JFrame {
         usernameField = new JTextField(20);
         mainPanel.add(usernameField, gbc);
 
-        // Password
-        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1;
-        mainPanel.add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.gridwidth = 2;
-        passwordField = new JPasswordField(20);
-        mainPanel.add(passwordField, gbc);
-
         // Send OTP Button
-        gbc.gridx = 1; gbc.gridy = 2; gbc.gridwidth = 1;
+        gbc.gridx = 1; gbc.gridy = 1; gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE; // Don't make button fill horizontally
         gbc.anchor = GridBagConstraints.LINE_START; // Align to where text starts in its cell
         sendOtpButton = new JButton("Send OTP");
@@ -91,15 +83,15 @@ public class NewLoginForm extends JFrame {
         gbc.anchor = GridBagConstraints.WEST; // Reset anchor
 
         // OTP Field
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
         mainPanel.add(new JLabel("OTP Code:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 3; gbc.gridwidth = 2;
+        gbc.gridx = 1; gbc.gridy = 2; gbc.gridwidth = 2;
         otpField = new JTextField(20);
         otpField.setEnabled(false); // Initially disabled
         mainPanel.add(otpField, gbc);
 
         // Login Button
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 3;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 3;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.NONE; // Don't make button fill horizontally
         loginButton = new JButton("Login");
@@ -107,7 +99,7 @@ public class NewLoginForm extends JFrame {
         mainPanel.add(loginButton, gbc);
 
         // Status Label
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 3;
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 3;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         statusLabel = new JLabel(" ", SwingConstants.CENTER); // Placeholder for messages, centered
@@ -121,7 +113,6 @@ public class NewLoginForm extends JFrame {
 
         // Placeholder text behavior
         addPlaceholderBehavior(usernameField, "Enter your email address");
-        addPlaceholderBehavior(passwordField, "Enter your password");
         addPlaceholderBehavior(otpField, "Enter OTP from email");
 
 
@@ -231,14 +222,12 @@ public class NewLoginForm extends JFrame {
         }
 
         String username = usernameField.getText();
-        String password = String.valueOf(passwordField.getPassword());
         String otp = otpField.getText();
 
         if (username.isEmpty() || username.equals("Enter your email address") ||
-            password.isEmpty() || password.equals("Enter your password") ||
             otp.isEmpty() || otp.equals("Enter OTP from email")) {
-            statusLabel.setText("All fields are required for login.");
-            JOptionPane.showMessageDialog(this, "Username, password, and OTP are required.", "Input Error", JOptionPane.WARNING_MESSAGE);
+            statusLabel.setText("Username and OTP are required for login.");
+            JOptionPane.showMessageDialog(this, "Username (Email) and OTP are required.", "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
         statusLabel.setText("Verifying...");
@@ -248,7 +237,7 @@ public class NewLoginForm extends JFrame {
         SwingWorker<Accounts, Void> worker = new SwingWorker<Accounts, Void>() {
             @Override
             protected Accounts doInBackground() throws Exception {
-                return accountsService.verifyOtpAndLogin(username, password, otp);
+                return accountsService.verifyOtpAndLogin(username, otp);
             }
 
             @Override
@@ -270,8 +259,8 @@ public class NewLoginForm extends JFrame {
                         }
                         NewLoginForm.this.dispose();
                     } else {
-                        statusLabel.setText("Login failed: Invalid credentials or OTP.");
-                        JOptionPane.showMessageDialog(NewLoginForm.this, "Login failed. Please check username, password, or OTP.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+                        statusLabel.setText("Login failed: Invalid username or OTP.");
+                        JOptionPane.showMessageDialog(NewLoginForm.this, "Login failed. Please check username or OTP.", "Login Failed", JOptionPane.ERROR_MESSAGE);
                         loginButton.setEnabled(true); // Re-enable login button
                         otpField.setText(""); // Clear OTP field
                         sendOtpButton.setEnabled(true); // Re-enable Send OTP button for another full attempt
