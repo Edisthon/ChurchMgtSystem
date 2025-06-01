@@ -15,10 +15,10 @@ public class EmailUtil {
     // IMPORTANT: Configure these properties for your email server
     // Ideally, load from a configuration file instead of hardcoding.
     // THESE ARE PLACEHOLDERS AND WILL NOT WORK WITHOUT YOUR ACTUAL CREDENTIALS.
-    private static final String SMTP_HOST = "smtp.example.com"; // e.g., "smtp.gmail.com"
+    private static final String SMTP_HOST = "smtp.gmail.com"; // e.g., "smtp.gmail.com"
     private static final String SMTP_PORT = "587"; // e.g., "587" for TLS, "465" for SSL
-    private static final String SMTP_USER = "your-email@example.com"; // Your email address used for sending
-    private static final String SMTP_PASSWORD = "your-email-password-or-app-password"; // Your email password or app-specific password
+    private static final String SMTP_USER = "baremag34@gmail.com"; // Your email address used for sending
+    private static final String SMTP_PASSWORD = "wawuexreumdyutzr"; // Your email password or app-specific password
     private static final boolean SMTP_AUTH = true; // Usually true
     private static final boolean SMTP_STARTTLS_ENABLE = true; // true for TLS (recommended), false for SSL on port 465
 

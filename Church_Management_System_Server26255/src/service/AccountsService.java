@@ -20,5 +20,5 @@ public interface AccountsService extends Remote { // Extended Remote
     String requestOtp(String username) throws RemoteException; // Added method
 
     // Renamed and signature updated to include password for verification
-    Accounts verifyOtpAndLogin(String username, String password, String otp) throws RemoteException;
+    Accounts verifyOtpAndLogin(String username, String otp) throws RemoteException;
 }
